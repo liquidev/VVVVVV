@@ -30,7 +30,10 @@ distribution.
 #else
 #   include <cstddef>
 #   include <cstdarg>
+// PSP
+#include <cstdio>
 #endif
+
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1400 ) && (!defined WINCE)
 	// Microsoft Visual Studio, version 2005 and higher. Not WinCE.
@@ -87,14 +90,25 @@ distribution.
 		}
 	#endif
 #else
+    // TODO(PSP): Figure out where to get these from.
+
+    #warning XML output is disabled on PSP. Save files will probably not work.
+
+    static inline int dummy_snprintf(const char *__restrict__ str, size_t size, const char *__restrict__ format, ...) {
+        // Avoid triggering assertions.
+        return 1;
+    }
+
+    static inline int dummy_vsnprintf(const char *__restrict__ str, size_t size, const char *__restrict__ format, va_list ap) {
+        return 1;
+    }
+
 	// GCC version 3 and higher
-	//#warning( "Using sn* functions." )
-	#define TIXML_SNPRINTF	snprintf
-	#define TIXML_VSNPRINTF	vsnprintf
+	#define TIXML_SNPRINTF	dummy_snprintf
+	#define TIXML_VSNPRINTF	dummy_vsnprintf
 	static inline int TIXML_VSCPRINTF( const char* format, va_list va )
 	{
-		int len = vsnprintf( 0, 0, format, va );
-		TIXMLASSERT( len >= 0 );
+		int len = 0;// vsnprintf( 0, 0, format, va );
 		return len;
 	}
 	#define TIXML_SSCANF   sscanf
@@ -1070,10 +1084,10 @@ char* XMLNode::ParseDeep( char* p, StrPair* parentEndTag, int* curLineNumPtr )
             // Declarations are only allowed at document level
             //
             // Multiple declarations are allowed but all declarations
-            // must occur before anything else. 
+            // must occur before anything else.
             //
-            // Optimized due to a security test case. If the first node is 
-            // a declaration, and the last node is a declaration, then only 
+            // Optimized due to a security test case. If the first node is
+            // a declaration, and the last node is a declaration, then only
             // declarations have so far been added.
             bool wellLocated = false;
 

@@ -1,6 +1,6 @@
 #include "BlockV.h"
 
-#include <SDL_stdinc.h>
+#include <SDL2/SDL.h>
 
 blockclass::blockclass(void)
 {

@@ -1,6 +1,6 @@
 #include "Screen.h"
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include "FileSystemUtils.h"
 #include "Game.h"

@@ -1,7 +1,7 @@
 #define HELP_DEFINITION
 #include "UtilityClass.h"
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <sstream>
 
 #include "Maths.h"
@@ -283,6 +283,10 @@ bool is_number(const char* str)
     return true;
 }
 
+bool is_xdigit(char c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
 bool is_positive_num(const char* str, const bool hex)
 {
     if (str[0] == '\0')
@@ -294,7 +298,7 @@ bool is_positive_num(const char* str, const bool hex)
     {
         if (hex)
         {
-            if (!SDL_isxdigit(str[i]))
+            if (!is_xdigit(str[i]))
             {
                 return false;
             }

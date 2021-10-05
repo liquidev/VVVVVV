@@ -1,4 +1,4 @@
-#include <SDL_stdinc.h>
+#include <SDL2/SDL.h>
 
 /* Handle third-party dependencies' needs here */
 

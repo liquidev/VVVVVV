@@ -1,5 +1,5 @@
 #include <physfs.h>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <tinyxml2.h>
@@ -31,6 +31,10 @@ static int mkdir(char* path, int mode)
 #include <limits.h>
 #include <sys/stat.h>
 #define MAX_PATH PATH_MAX
+
+#else
+// PSP
+#define MAX_PATH 256
 #endif
 
 static char saveDir[MAX_PATH] = {'\0'};
@@ -122,7 +126,7 @@ int FILESYSTEM_init(char *argvZero, char* baseDir, char *assetsPath)
         "saves",
         pathSep
     );
-    mkdir(saveDir, 0777);
+    // mkdir(saveDir, 0777); // TODO(PSP): save directory
     vlog_info("Save directory: %s", saveDir);
 
     /* Store full level directory */
@@ -131,7 +135,7 @@ int FILESYSTEM_init(char *argvZero, char* baseDir, char *assetsPath)
         "levels",
         pathSep
     );
-    mkdir(levelDir, 0777);
+    // mkdir(levelDir, 0777); // TODO(PSP): save directory
     vlog_info("Level directory: %s", levelDir);
 
     basePath = SDL_GetBasePath();
