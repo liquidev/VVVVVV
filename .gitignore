@@ -9,6 +9,7 @@ VVVVVV
 *.a
 *.gch
 src/Version.h.out
+.cache
 
 # Game data
 data.zip

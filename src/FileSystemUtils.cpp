@@ -1,3 +1,5 @@
+#include <SDL2/SDL_filesystem.h>
+#include <SDL2/SDL_stdinc.h>
 #include <physfs.h>
 #include <SDL2/SDL.h>
 #include <stdarg.h>
@@ -65,7 +67,7 @@ static const PHYSFS_Allocator allocator = {
 
 int FILESYSTEM_init(char *argvZero, char* baseDir, char *assetsPath)
 {
-    char output[MAX_PATH];
+    char output[MAX_PATH] = {0};
     int retval;
     const char* pathSep = PHYSFS_getDirSeparator();
     char* basePath;
@@ -94,9 +96,11 @@ int FILESYSTEM_init(char *argvZero, char* baseDir, char *assetsPath)
             !trailing_pathsep ? pathSep : ""
         );
     }
-    else if (!PLATFORM_getOSDirectory(output, sizeof(output)))
+    else // if (!PLATFORM_getOSDirectory(output, sizeof(output)))
     {
-        return 0;
+        // NOTE: Getting OS directories on PSP is not available. Fall back to the current directory.
+        output[0] = '.';
+        output[1] = '/';
     }
 
     /* Mount our base user directory */

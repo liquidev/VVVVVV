@@ -63,7 +63,7 @@ static inline PHYSFS_ErrorCode errcodeFromErrno(void)
 
 char *__PHYSFS_platformCalcUserDir(void)
 {
-    return "/not-used";
+    return "/not-used/";
 } /* __PHYSFS_platformCalcUserDir */
 
 
@@ -287,15 +287,19 @@ int __PHYSFS_platformStat(const char *fname, PHYSFS_Stat *st, const int follow)
 } /* __PHYSFS_platformStat */
 
 
+static const void *MUTEX = 123;
+static const void *THREADID = 456;
+
+
 void *__PHYSFS_platformGetThreadID(void)
 {
-    return 0;
+    return THREADID;
 } /* __PHYSFS_platformGetThreadID */
 
 
 void *__PHYSFS_platformCreateMutex(void)
 {
-    return 0;
+    return MUTEX;
 } /* __PHYSFS_platformCreateMutex */
 
 

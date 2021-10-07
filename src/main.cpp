@@ -395,10 +395,10 @@ int main(int argc, char *argv[])
     char* baseDir = NULL;
     char* assetsPath = NULL;
 
-    vlog_init();
-    psp_setup_callbacks();
-
     pspDebugScreenInit();
+    vlog_init();
+
+    psp_setup_callbacks();
 
     for (int i = 1; i < argc; ++i)
     {
@@ -512,6 +512,7 @@ int main(int argc, char *argv[])
         VVV_exit(1);
     }
 
+    vlog_info("Initializing SDL");
     SDL_Init(
         SDL_INIT_VIDEO |
         SDL_INIT_AUDIO |
@@ -523,8 +524,12 @@ int main(int argc, char *argv[])
         SDL_StopTextInput();
     }
 
+    vlog_info("Initializing networking (should be a noop)");
     NETWORK_init();
 
+    // Sorry Terry, but noone is going to see Viridian anyways.
+#if 1
+    pspDebugScreenClear();
     vlog_info("\t\t");
     vlog_info("\t\t");
     vlog_info("\t\t       VVVVVV");
@@ -553,6 +558,7 @@ int main(int argc, char *argv[])
     vlog_info("\t\t  888888    888888  ");
     vlog_info("\t\t");
     vlog_info("\t\t");
+#endif
 
     //Set up screen
 
@@ -562,24 +568,30 @@ int main(int argc, char *argv[])
     // Load Ini
 
 
+    vlog_info("Initializing graphics");
     graphics.init();
 
+    vlog_info("Initializing game state");
     game.init();
 
     // This loads music too...
+    vlog_info("Reloading resources");
     if (!graphics.reloadresources())
     {
         /* Something wrong with the default assets? We can't use them to
          * display the error message, and we have to bail. */
-        SDL_ShowSimpleMessageBox(
-            SDL_MESSAGEBOX_ERROR,
-            graphics.error_title,
-            graphics.error,
-            NULL
-        );
+        pspDebugScreenInit();
+        vlog_error("%s: %s", graphics.error_title, graphics.error);
+        //SDL_ShowSimpleMessageBox(
+        //    SDL_MESSAGEBOX_ERROR,
+        //    graphics.error_title,
+        //    graphics.error,
+        //    NULL
+        //);
 
         VVV_exit(1);
     }
+    vlog_info("Done! It's time to take a piss.");
 
     game.gamestate = PRELOADER;
 

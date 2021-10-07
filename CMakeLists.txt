@@ -28,9 +28,12 @@ endif()
 
 project(VVVVVV)
 
+# More CMake things.
 if (NOT CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/psp-toolchain.cmake)
 endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Source Lists
 set(VVV_SRC
@@ -213,6 +216,7 @@ add_library(physfs-static STATIC ${PFS_SRC})
 target_compile_definitions(physfs-static PRIVATE
     -DPHYSFS_SUPPORTS_DEFAULT=0 -DPHYSFS_SUPPORTS_ZIP=1
 )
+target_link_libraries(physfs-static pspdebug)
 
 # PhysFS needs some extensions...
 if(${CMAKE_VERSION} VERSION_GREATER "3.1.3"
@@ -226,18 +230,19 @@ target_link_libraries(VVVVVV physfs-static tinyxml2-static lodepng-static)
 # PSP libraries
 #--
 
-set(PSPSDK $ENV{PSPSDK})
+# set(PSPSDK $ENV{PSPSDK})
 
 include_directories(
     ${PSPSDK}/include
     ${PSPSDK}/libc/include
 )
 
-target_link_libraries(VVVVVV -L${PSPSDK}/lib -L${PSPSDK}/../lib)
+target_link_libraries(VVVVVV -L${PSPSDK}/lib -L${PSPDEV}/lib)
 
 target_link_libraries(VVVVVV
     SDL2_mixer
     SDL2
+    SDL2main
     vorbisfile
     vorbis
     ogg
@@ -274,6 +279,8 @@ set(RES_PARAM_SFO ${CMAKE_CURRENT_SOURCE_DIR}/resources/PARAM.SFO)
 set(RES_ICON0 ${CMAKE_CURRENT_SOURCE_DIR}/resources/ICON0.PNG)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CreatePBP.cmake)
+
+# set(BUILD_PRX 1)
 
 create_pbp_file(
     TARGET VVVVVV

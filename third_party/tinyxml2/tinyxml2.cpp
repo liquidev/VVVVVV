@@ -90,25 +90,16 @@ distribution.
 		}
 	#endif
 #else
-    // TODO(PSP): Figure out where to get these from.
-
-    #warning XML output is disabled on PSP. Save files will probably not work.
-
-    static inline int dummy_snprintf(const char *__restrict__ str, size_t size, const char *__restrict__ format, ...) {
-        // Avoid triggering assertions.
-        return 1;
+    extern "C" {
+        int vsnprintf(char *buf, size_t n, const char *fmt, va_list ap);
+        int snprintf(char *buf, size_t n, const char *fmt, ...);
     }
 
-    static inline int dummy_vsnprintf(const char *__restrict__ str, size_t size, const char *__restrict__ format, va_list ap) {
-        return 1;
-    }
-
-	// GCC version 3 and higher
-	#define TIXML_SNPRINTF	dummy_snprintf
-	#define TIXML_VSNPRINTF	dummy_vsnprintf
+	#define TIXML_SNPRINTF	snprintf
+	#define TIXML_VSNPRINTF	vsnprintf
 	static inline int TIXML_VSCPRINTF( const char* format, va_list va )
 	{
-		int len = 0;// vsnprintf( 0, 0, format, va );
+		int len = vsnprintf( 0, 0, format, va );
 		return len;
 	}
 	#define TIXML_SSCANF   sscanf

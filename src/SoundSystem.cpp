@@ -32,6 +32,8 @@ SoundTrack::SoundTrack(const char* fileName)
     unsigned char *mem;
     size_t length;
 
+    vlog_info("MUSIC | SoundTrack %s", fileName);
+
     sound = NULL;
 
     FILESYSTEM_loadAssetToMemory(fileName, &mem, &length, false);

@@ -3382,13 +3382,16 @@ bool Graphics::reloadresources(void)
 
     destroy();
 
+    vlog_info("GFX | Initializing arrays");
     MAYBE_FAIL(MakeTileArray());
     MAYBE_FAIL(MakeSpriteArray());
     MAYBE_FAIL(maketelearray());
     MAYBE_FAIL(Makebfont());
 
+    vlog_info("GFX | Clearing images");
     images.clear();
 
+    vlog_info("GFX | Creating images");
     images.push_back(grphx.im_image0);
     images.push_back(grphx.im_image1);
     images.push_back(grphx.im_image2);
@@ -3404,15 +3407,19 @@ bool Graphics::reloadresources(void)
     images.push_back(grphx.im_image11);
     images.push_back(grphx.im_image12);
 
+    vlog_info("GFX | Loading icon");
     if (screenbuffer != NULL)
     {
         screenbuffer->LoadIcon();
     }
 
+    // I wonder why graphics are responsible for loading music.
+    vlog_info("GFX | Initializing music");
     music.destroy();
     music.init();
 
 #ifndef NO_CUSTOM_LEVELS
+    vlog_info("GFX | Checking assets");
     tiles1_mounted = FILESYSTEM_isAssetMounted("graphics/tiles.png");
     tiles2_mounted = FILESYSTEM_isAssetMounted("graphics/tiles2.png");
     minimap_mounted = FILESYSTEM_isAssetMounted("graphics/minimap.png");

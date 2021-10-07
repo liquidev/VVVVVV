@@ -32,6 +32,7 @@ musicclass::musicclass(void)
 
 void musicclass::init(void)
 {
+    vlog_info("MUSIC | Loading sound tracks");
     soundTracks.push_back(SoundTrack( "sounds/jump.wav" ));
     soundTracks.push_back(SoundTrack( "sounds/jump2.wav" ));
     soundTracks.push_back(SoundTrack( "sounds/hurt.wav" ));
@@ -60,6 +61,10 @@ void musicclass::init(void)
     soundTracks.push_back(SoundTrack( "sounds/newrecord.wav" ));
     soundTracks.push_back(SoundTrack( "sounds/trophy.wav" ));
     soundTracks.push_back(SoundTrack( "sounds/rescue.wav" ));
+
+// PSP: Music is temporarily disabled as it'll need to be streamed during the game instead of being
+// loaded all at once, as is done here.
+#if 0
 
 #ifdef VVV_COMPILEMUSIC
     binaryBlob musicWriteBlob;
@@ -166,6 +171,8 @@ void musicclass::init(void)
         num_pppppp_tracks++;
         index_++;
     }
+
+#endif // #if 0
 }
 
 void musicclass::destroy(void)
@@ -192,6 +199,10 @@ void musicclass::destroy(void)
 
 void musicclass::play(int t)
 {
+    // PSP: Music was too memory-intensive.
+    vlog_error("Music is temporarily disabled");
+    return;
+
     if (mmmmmm && usingmmmmmm)
     {
         // Don't conjoin this if-statement with the above one...
