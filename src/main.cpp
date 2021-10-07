@@ -28,6 +28,11 @@
 #include "UtilityClass.h"
 #include "Vlogging.h"
 
+#include <pspkernel.h>
+#include <pspdebug.h>
+
+PSP_MODULE_INFO("VVVVVV", 0, 1, 0);
+
 scriptclass script;
 
 #ifndef NO_CUSTOM_LEVELS
@@ -363,12 +368,37 @@ static void emscriptenloop(void)
 }
 #endif
 
+int psp_exit_callback(int arg1, int arg2, void *common)
+{
+    sceKernelExitGame();
+    return 0;
+}
+
+int psp_callback_thread(SceSize args, void *argp)
+{
+    int callback_id = sceKernelCreateCallback("Exit Callback", psp_exit_callback, NULL);
+    sceKernelRegisterExitCallback(callback_id);
+    sceKernelSleepThreadCB();
+    return 0;
+}
+
+static inline void psp_setup_callbacks()
+{
+    int thread_id = sceKernelCreateThread("Update Thread", psp_callback_thread, 0x11, 0xFA0, 0, 0);
+    if (thread_id > 0) {
+        sceKernelStartThread(thread_id, 0, 0);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     char* baseDir = NULL;
     char* assetsPath = NULL;
 
     vlog_init();
+    psp_setup_callbacks();
+
+    pspDebugScreenInit();
 
     for (int i = 1; i < argc; ++i)
     {

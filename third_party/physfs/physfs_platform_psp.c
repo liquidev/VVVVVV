@@ -8,10 +8,14 @@
 
 /* !!! FIXME: check for EINTR? */
 
+// NOTE from liquidev:
+// pspsdk has a very similar API to POSIX, except for all the multithreading stuff which I just
+// removed.
+
 #define __PHYSICSFS_INTERNAL__
 #include "physfs_platforms.h"
 
-#ifdef PHYSFS_PLATFORM_POSIX
+#ifdef PHYSFS_PLATFORM_PSP
 
 #include <unistd.h>
 #include <ctype.h>
@@ -21,7 +25,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <pthread.h>
 
 #include "physfs_internal.h"
 
@@ -58,63 +61,9 @@ static inline PHYSFS_ErrorCode errcodeFromErrno(void)
 } /* errcodeFromErrno */
 
 
-static char *getUserDirByUID(void)
-{
-    uid_t uid = getuid();
-    struct passwd *pw;
-    char *retval = NULL;
-
-    pw = getpwuid(uid);
-    if ((pw != NULL) && (pw->pw_dir != NULL) && (*pw->pw_dir != '\0'))
-    {
-        const size_t dlen = strlen(pw->pw_dir);
-        const size_t add_dirsep = (pw->pw_dir[dlen-1] != '/') ? 1 : 0;
-        retval = (char *) allocator.Malloc(dlen + 1 + add_dirsep);
-        if (retval != NULL)
-        {
-            strcpy(retval, pw->pw_dir);
-            if (add_dirsep)
-            {
-                retval[dlen] = '/';
-                retval[dlen+1] = '\0';
-            } /* if */
-        } /* if */
-    } /* if */
-
-    return retval;
-} /* getUserDirByUID */
-
-
 char *__PHYSFS_platformCalcUserDir(void)
 {
-    char *retval = NULL;
-    char *envr = getenv("HOME");
-
-    /* if the environment variable was set, make sure it's really a dir. */
-    if (envr != NULL)
-    {
-        struct stat statbuf;
-        if ((stat(envr, &statbuf) != -1) && (S_ISDIR(statbuf.st_mode)))
-        {
-            const size_t envrlen = strlen(envr);
-            const size_t add_dirsep = (envr[envrlen-1] != '/') ? 1 : 0;
-            retval = allocator.Malloc(envrlen + 1 + add_dirsep);
-            if (retval)
-            {
-                strcpy(retval, envr);
-                if (add_dirsep)
-                {
-                    retval[envrlen] = '/';
-                    retval[envrlen+1] = '\0';
-                } /* if */
-            } /* if */
-        } /* if */
-    } /* if */
-
-    if (retval == NULL)
-        retval = getUserDirByUID();
-
-    return retval;
+    return "/not-used";
 } /* __PHYSFS_platformCalcUserDir */
 
 
@@ -274,9 +223,11 @@ PHYSFS_sint64 __PHYSFS_platformFileLength(void *opaque)
 
 int __PHYSFS_platformFlush(void *opaque)
 {
-    const int fd = *((int *) opaque);
-    if ((fcntl(fd, F_GETFL) & O_ACCMODE) != O_RDONLY)
-        BAIL_IF(fsync(fd) == -1, errcodeFromErrno(), 0);
+    // const int fd = *((int *) opaque);
+    // if ((fcntl(fd, F_GETFL) & O_ACCMODE) != O_RDONLY)
+    //     BAIL_IF(fsync(fd) == -1, errcodeFromErrno(), 0);
+
+    // PSP: I _think_ all disk operations are flushed immediately on PSP, but I may be wrong there.
     return 1;
 } /* __PHYSFS_platformFlush */
 
@@ -299,7 +250,8 @@ int __PHYSFS_platformDelete(const char *path)
 int __PHYSFS_platformStat(const char *fname, PHYSFS_Stat *st, const int follow)
 {
     struct stat statbuf;
-    const int rc = follow ? stat(fname, &statbuf) : lstat(fname, &statbuf);
+    // PSP: Symlinks are not supported, so we just use stat.
+    const int rc = stat(fname, &statbuf);
     BAIL_IF(rc == -1, errcodeFromErrno(), 0);
 
     if (S_ISREG(statbuf.st_mode))
@@ -335,80 +287,31 @@ int __PHYSFS_platformStat(const char *fname, PHYSFS_Stat *st, const int follow)
 } /* __PHYSFS_platformStat */
 
 
-typedef struct
-{
-    pthread_mutex_t mutex;
-    pthread_t owner;
-    PHYSFS_uint32 count;
-} PthreadMutex;
-
-
 void *__PHYSFS_platformGetThreadID(void)
 {
-    return ( (void *) ((size_t) pthread_self()) );
+    return 0;
 } /* __PHYSFS_platformGetThreadID */
 
 
 void *__PHYSFS_platformCreateMutex(void)
 {
-    int rc;
-    PthreadMutex *m = (PthreadMutex *) allocator.Malloc(sizeof (PthreadMutex));
-    BAIL_IF(!m, PHYSFS_ERR_OUT_OF_MEMORY, NULL);
-    rc = pthread_mutex_init(&m->mutex, NULL);
-    if (rc != 0)
-    {
-        allocator.Free(m);
-        BAIL(PHYSFS_ERR_OS_ERROR, NULL);
-    } /* if */
-
-    m->count = 0;
-    m->owner = (pthread_t) 0xDEADBEEF;
-    return ((void *) m);
+    return 0;
 } /* __PHYSFS_platformCreateMutex */
 
 
 void __PHYSFS_platformDestroyMutex(void *mutex)
 {
-    PthreadMutex *m = (PthreadMutex *) mutex;
-
-    /* Destroying a locked mutex is a bug, but we'll try to be helpful. */
-    if ((m->owner == pthread_self()) && (m->count > 0))
-        pthread_mutex_unlock(&m->mutex);
-
-    pthread_mutex_destroy(&m->mutex);
-    allocator.Free(m);
 } /* __PHYSFS_platformDestroyMutex */
 
 
 int __PHYSFS_platformGrabMutex(void *mutex)
 {
-    PthreadMutex *m = (PthreadMutex *) mutex;
-    pthread_t tid = pthread_self();
-    if (m->owner != tid)
-    {
-        if (pthread_mutex_lock(&m->mutex) != 0)
-            return 0;
-        m->owner = tid;
-    } /* if */
-
-    m->count++;
     return 1;
 } /* __PHYSFS_platformGrabMutex */
 
 
 void __PHYSFS_platformReleaseMutex(void *mutex)
 {
-    PthreadMutex *m = (PthreadMutex *) mutex;
-    assert(m->owner == pthread_self());  /* catch programming errors. */
-    assert(m->count > 0);  /* catch programming errors. */
-    if (m->owner == pthread_self())
-    {
-        if (--m->count == 0)
-        {
-            m->owner = (pthread_t) 0xDEADBEEF;
-            pthread_mutex_unlock(&m->mutex);
-        } /* if */
-    } /* if */
 } /* __PHYSFS_platformReleaseMutex */
 
 #endif  /* PHYSFS_PLATFORM_POSIX */

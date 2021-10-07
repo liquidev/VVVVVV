@@ -1069,27 +1069,13 @@ bool FILESYSTEM_openDirectoryEnabled(void)
      * If you're working on a tenfoot-only build, add a def that always
      * returns false!
      */
-    return !SDL_GetHintBoolean("SteamTenfoot", SDL_FALSE);
+    return false;
 }
 
-#if defined(__EMSCRIPTEN__)
 bool FILESYSTEM_openDirectory(const char *dname)
 {
     return false;
 }
-#else
-bool FILESYSTEM_openDirectory(const char *dname)
-{
-    char url[MAX_PATH];
-    SDL_snprintf(url, sizeof(url), "file://%s", dname);
-    if (SDL_OpenURL(url) == -1)
-    {
-        vlog_error("Error opening directory: %s", SDL_GetError());
-        return false;
-    }
-    return true;
-}
-#endif
 
 bool FILESYSTEM_delete(const char *name)
 {

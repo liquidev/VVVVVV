@@ -83,6 +83,8 @@ void vlog_toggle_error(const int enable_error)
     error_enabled = enable_error;
 }
 
+#if 0
+
 SDL_PRINTF_VARARG_FUNC(1) int vlog_debug(const char* text, ...)
 {
     va_list list;
@@ -178,3 +180,5 @@ SDL_PRINTF_VARARG_FUNC(1) int vlog_error(const char* text, ...)
 
     return retval;
 }
+
+#endif

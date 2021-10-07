@@ -12,7 +12,6 @@
  *  PHYSFS_PLATFORM_UNIX on that system.
  */
 
-/*
 #if (defined __HAIKU__)
 #  define PHYSFS_PLATFORM_HAIKU 1
 #  define PHYSFS_PLATFORM_POSIX 1
@@ -20,7 +19,7 @@
 #  error BeOS support was dropped since PhysicsFS 2.1. Sorry. Try Haiku!
 #elif (defined _WIN32_WCE) || (defined _WIN64_WCE)
 #  error PocketPC support was dropped since PhysicsFS 2.1. Sorry. Try WinRT!
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1700) && !_USING_V110_SDK71_)	_MSC_VER==1700 for MSVC 2012
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1700) && !_USING_V110_SDK71_)	/* _MSC_VER==1700 for MSVC 2012 */
 #  include <winapifamily.h>
 #  define PHYSFS_PLATFORM_WINDOWS 1
 #  if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -32,7 +31,7 @@
 #elif defined(__OS2__) || defined(OS2)
 #  define PHYSFS_PLATFORM_OS2 1
 #elif ((defined __MACH__) && (defined __APPLE__))
-To check if iOS or not, we need to include this file
+/* To check if iOS or not, we need to include this file */
 #  include <TargetConditionals.h>
 #  if ((TARGET_IPHONE_SIMULATOR) || (TARGET_OS_IPHONE))
 #     define PHYSFS_NO_CDROM_SUPPORT 1
@@ -70,15 +69,15 @@ To check if iOS or not, we need to include this file
 #elif defined(__QNX__)
 #  define PHYSFS_PLATFORM_QNX 1
 #  define PHYSFS_PLATFORM_POSIX 1
+#elif defined(__PSP__)
+#  define PHYSFS_PLATFORM_UNIX 1
+#  define PHYSFS_PLATFORM_PSP 1
 #elif defined(unix) || defined(__unix__)
 #  define PHYSFS_PLATFORM_UNIX 1
 #  define PHYSFS_PLATFORM_POSIX 1
 #else
 #  error Unknown platform.
 #endif
-*/
-
-// TODO(PSP): Figure out which platform flags are needed.
 
 #endif  /* include-once blocker. */
 

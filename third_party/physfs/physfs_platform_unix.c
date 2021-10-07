@@ -216,32 +216,6 @@ static char *findBinaryInPath(const char *bin, char *envr)
 
 static char *readSymLink(const char *path)
 {
-    ssize_t len = 64;
-    ssize_t rc = -1;
-    char *retval = NULL;
-
-    while (1)
-    {
-         char *ptr = (char *) allocator.Realloc(retval, (size_t) len);
-         if (ptr == NULL)
-             break;   /* out of memory. */
-         retval = ptr;
-
-         rc = readlink(path, retval, len);
-         if (rc == -1)
-             break;  /* not a symlink, i/o error, etc. */
-
-         else if (rc < len)
-         {
-             retval[rc] = '\0';  /* readlink doesn't null-terminate. */
-             return retval;  /* we're good to go. */
-         } /* else if */
-
-         len *= 2;  /* grow buffer, try again. */
-    } /* while */
-
-    if (retval != NULL)
-        allocator.Free(retval);
     return NULL;
 } /* readSymLink */
 
