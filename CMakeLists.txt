@@ -17,21 +17,17 @@ option(OFFICIAL_BUILD "Compile an official build of the game" OFF)
 option(MAKEANDPLAY "Compile a version of the game without the main campaign (provided for convenience; consider modifying MakeAndPlay.h instead" OFF)
 
 if(${CMAKE_VERSION} VERSION_LESS "3.1.3")
-    message(WARNING "Your CMake version is too old; set -std=c90 -std=c++98 yourself!")
+    message(WARNING "Your CMake version is too old; set -std=c90 -std=c++11 yourself!")
 else()
     set(CMAKE_C_STANDARD 90)
     set(CMAKE_C_EXTENSIONS OFF)
 
-    set(CMAKE_CXX_STANDARD 98)
+    set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
 project(VVVVVV)
 
-# More CMake things.
-if (NOT CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/psp-toolchain.cmake)
-endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -74,6 +70,7 @@ set(VVV_SRC
     src/Network.c
     src/ThirdPartyDeps.c
     src/Vlogging.c
+    src/VRAM.cpp
     src/Xoshiro.c
     third_party/physfs/extras/physfsrwops.c
 )
@@ -84,6 +81,9 @@ if(NOT CUSTOM_LEVEL_SUPPORT STREQUAL "DISABLED")
         LIST(APPEND VVV_SRC src/Editor.cpp)
     endif()
 endif()
+
+# Toolchain file doesn't work for some reason.
+# add_link_options(-Wl,-q,-T${PSPDEV}/psp/sdk/lib/linkfile.prx)
 
 add_executable(VVVVVV ${VVV_SRC})
 
@@ -214,7 +214,9 @@ target_compile_definitions(lodepng-static PRIVATE
 add_library(tinyxml2-static STATIC ${XML2_SRC})
 add_library(physfs-static STATIC ${PFS_SRC})
 target_compile_definitions(physfs-static PRIVATE
-    -DPHYSFS_SUPPORTS_DEFAULT=0 -DPHYSFS_SUPPORTS_ZIP=1
+    -DPHYSFS_SUPPORTS_DEFAULT=0
+    -DPHYSFS_SUPPORTS_ZIP=1
+    # -DPHYSFS_NO_CDROM_SUPPORT=1
 )
 target_link_libraries(physfs-static pspdebug)
 

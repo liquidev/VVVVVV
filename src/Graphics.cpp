@@ -3407,12 +3407,6 @@ bool Graphics::reloadresources(void)
     images.push_back(grphx.im_image11);
     images.push_back(grphx.im_image12);
 
-    vlog_info("GFX | Loading icon");
-    if (screenbuffer != NULL)
-    {
-        screenbuffer->LoadIcon();
-    }
-
     // I wonder why graphics are responsible for loading music.
     vlog_info("GFX | Initializing music");
     music.destroy();

@@ -539,7 +539,6 @@ static void menuactionpress(void)
             && FILESYSTEM_openDirectory(FILESYSTEM_getUserLevelDirectory()))
             {
                 music.playef(11);
-                SDL_MinimizeWindow(graphics.screenbuffer->m_window);
             }
             else
             {

@@ -30,6 +30,7 @@
 
 #include <pspkernel.h>
 #include <pspdebug.h>
+#include "VRAM.h"
 
 PSP_MODULE_INFO("VVVVVV", 0, 1, 0);
 
@@ -50,7 +51,7 @@ Game game;
 KeyPoll key;
 mapclass map;
 entityclass obj;
-Screen gameScreen;
+Screen __attribute__((aligned(16))) gameScreen;
 
 static bool startinplaytest = false;
 static bool savefileplaytest = false;
@@ -399,6 +400,7 @@ int main(int argc, char *argv[])
     vlog_init();
 
     psp_setup_callbacks();
+    vram::init();
 
     for (int i = 1; i < argc; ++i)
     {
@@ -528,7 +530,7 @@ int main(int argc, char *argv[])
     NETWORK_init();
 
     // Sorry Terry, but noone is going to see Viridian anyways.
-#if 1
+#if 0
     pspDebugScreenClear();
     vlog_info("\t\t");
     vlog_info("\t\t");
@@ -591,7 +593,6 @@ int main(int argc, char *argv[])
 
         VVV_exit(1);
     }
-    vlog_info("Done! It's time to take a piss.");
 
     game.gamestate = PRELOADER;
 
@@ -616,6 +617,9 @@ int main(int argc, char *argv[])
     }
     graphics.screenbuffer = &gameScreen;
 
+    sceKernelDcacheWritebackAll();
+
+    vlog_info("Creating screen buffers");
     graphics.create_buffers(gameScreen.GetFormat());
 
     if (game.skipfakeload)
