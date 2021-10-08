@@ -82,9 +82,6 @@ if(NOT CUSTOM_LEVEL_SUPPORT STREQUAL "DISABLED")
     endif()
 endif()
 
-# Toolchain file doesn't work for some reason.
-add_link_options(-Wl,-q)
-
 add_executable(VVVVVV ${VVV_SRC})
 
 # Include Directories
