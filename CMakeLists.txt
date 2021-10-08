@@ -83,7 +83,7 @@ if(NOT CUSTOM_LEVEL_SUPPORT STREQUAL "DISABLED")
 endif()
 
 # Toolchain file doesn't work for some reason.
-# add_link_options(-Wl,-q,-T${PSPDEV}/psp/sdk/lib/linkfile.prx)
+add_link_options(-Wl,-q)
 
 add_executable(VVVVVV ${VVV_SRC})
 
@@ -125,6 +125,8 @@ set(PFS_SRC
     third_party/physfs/physfs_unicode.c
 )
 set(PNG_SRC third_party/lodepng/lodepng.c)
+
+message(WARNING ${CMAKE_TOOLCHAIN_FILE})
 
 if(NOT OFFICIAL_BUILD)
     # Add interim commit hash and its date to the build
@@ -280,23 +282,11 @@ target_link_libraries(VVVVVV
 set(RES_PARAM_SFO ${CMAKE_CURRENT_SOURCE_DIR}/resources/PARAM.SFO)
 set(RES_ICON0 ${CMAKE_CURRENT_SOURCE_DIR}/resources/ICON0.PNG)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CreatePBP.cmake)
-
-# set(BUILD_PRX 1)
-
 create_pbp_file(
     TARGET VVVVVV
     TITLE "VVVVVV"
     ICON_PATH ${RES_ICON0}
     BACKGROUND_PATH NULL
     PREVIEW_PATH NULL
+    BUILD_PRX
 )
-
-# add_custom_command(TARGET VVVVVV
-#     POST_BUILD
-#     COMMAND psp-fixup-imports VVVVVV
-#     COMMAND psp-prxgen VVVVVV vvvvvv.prx
-#     COMMAND pack-pbp EBOOT.PBP ${RES_PARAM_SFO} ${RES_ICON0} NULL NULL NULL NULL vvvvvv.prx NULL
-#     DEPENDS ${RES_PARAM_SFO} ${RES_ICON0}
-#     BYPRODUCTS EBOOT.PBP
-# )
