@@ -25,9 +25,9 @@ struct SurfaceRgba
         data,
         W, H,
         Depth, Pitch,
-        0x000000FF,
-        0x0000FF00,
         0x00FF0000,
+        0x0000FF00,
+        0x000000FF,
         0xFF000000
     ))
     {

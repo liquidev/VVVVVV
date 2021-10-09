@@ -187,7 +187,7 @@ void Screen::FlipScreen(const bool flipmode)
     sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFront, DISPLAY_WIDTH_POT);
     sceDisplaySetFrameBuf(displayFront, DISPLAY_WIDTH_POT, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
 
-    sceGuClearColor(0xFF0000);
+    // sceGuClearColor(0x000000);
     sceGuClear(GU_COLOR_BUFFER_BIT);
 
     sceGuCopyImage(
