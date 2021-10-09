@@ -1,3 +1,4 @@
+#include <SDL2/SDL_gamecontroller.h>
 #include <SDL2/SDL_keycode.h>
 #define KEY_DEFINITION
 #include "KeyPoll.h"
@@ -127,6 +128,8 @@ void KeyPoll::Poll(void)
         buttonmap[SDL_CONTROLLER_BUTTON_B] = (pad.Buttons & PSP_CTRL_CIRCLE) != 0;
         buttonmap[SDL_CONTROLLER_BUTTON_X] = (pad.Buttons & PSP_CTRL_SQUARE) != 0;
         buttonmap[SDL_CONTROLLER_BUTTON_Y] = (pad.Buttons & PSP_CTRL_TRIANGLE) != 0;
+        buttonmap[SDL_CONTROLLER_BUTTON_GUIDE] = (pad.Buttons & PSP_CTRL_SELECT) != 0;
+        buttonmap[SDL_CONTROLLER_BUTTON_START] = (pad.Buttons & PSP_CTRL_START) != 0;
         buttonmap[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = (pad.Buttons & PSP_CTRL_RIGHT) != 0;
         buttonmap[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = (pad.Buttons & PSP_CTRL_DOWN) != 0;
         buttonmap[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = (pad.Buttons & PSP_CTRL_LEFT) != 0;

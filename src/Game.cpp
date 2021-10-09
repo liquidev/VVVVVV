@@ -1,4 +1,5 @@
 #include "pspdebug.h"
+#include <SDL2/SDL_gamecontroller.h>
 #define GAME_DEFINITION
 #include "Game.h"
 
@@ -4110,11 +4111,13 @@ static void default_controls(Game &g)
     {
         g.controllerButton_map.clear();
         g.controllerButton_map.push_back(SDL_CONTROLLER_BUTTON_Y);
+        g.controllerButton_map.push_back(SDL_CONTROLLER_BUTTON_GUIDE);
     }
     if (g.controllerButton_esc.size() < 1)
     {
         g.controllerButton_esc.clear();
         g.controllerButton_esc.push_back(SDL_CONTROLLER_BUTTON_B);
+        g.controllerButton_esc.push_back(SDL_CONTROLLER_BUTTON_START);
     }
     if (g.controllerButton_restart.size() < 1)
     {
