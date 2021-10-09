@@ -316,15 +316,16 @@ static void menurender(void)
 
             switch (graphics.screenbuffer->scalingMode)
             {
-            case 2:
+            case ssOneToOne:
                 graphics.Print( -1, 85, "Current mode: 1:1", tr, tg, tb, true);
                 break;
-            case 1:
+            case ssFourToThree:
                 graphics.Print( -1, 85, "Current mode: 4:3 FILL", tr, tg, tb, true);
                 break;
-            default:
+            case ssFullscreen:
                 graphics.Print( -1, 85, "Current mode: FULLSCREEN", tr, tg, tb, true);
                 break;
+            case ss_Last: break; // Not possible
             }
             break;
         case 2:

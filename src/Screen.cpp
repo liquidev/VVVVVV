@@ -22,8 +22,8 @@ ScreenSettings::ScreenSettings(void)
     windowHeight = 240;
     fullscreen = false;
     useVsync = true; // Now that uncapped is the default...
-    scalingMode = ssOneToOne;
-    linearFilter = false;
+    scalingMode = ssFourToThree;
+    linearFilter = true;
     badSignal = false;
 }
 
@@ -135,6 +135,18 @@ const SDL_PixelFormat* Screen::GetFormat(void)
 SDL_Rect Screen::screenRect() {
     float hscale = 1.0f, vscale = 1.0f;
 
+    switch (scalingMode) {
+    case ssOneToOne: break; // No scaling applied
+    case ssFourToThree: // Fit to height
+        hscale = vscale = float(DISPLAY_HEIGHT) / float(SCREEN_HEIGHT);
+        break;
+    case ssFullscreen: // Fit to screen
+        hscale = float(DISPLAY_WIDTH) / float(SCREEN_WIDTH);
+        vscale = float(DISPLAY_HEIGHT) / float(SCREEN_HEIGHT);
+        break;
+    case ss_Last: break; // Cannot happen
+    }
+
     float width = hscale * SCREEN_WIDTH;
     float height = vscale * SCREEN_HEIGHT;
     return {
@@ -187,7 +199,6 @@ void Screen::FlipScreen(const bool flipmode)
     sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFront, DISPLAY_WIDTH_POT);
     sceDisplaySetFrameBuf(displayFront, DISPLAY_WIDTH_POT, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
 
-    // sceGuClearColor(0x000000);
     sceGuClear(GU_COLOR_BUFFER_BIT);
 
     sceGuCopyImage(
@@ -209,8 +220,7 @@ void Screen::FlipScreen(const bool flipmode)
     sceGuFinish();
     sceGuSync(0, 0);
 
-    // Swap buffers
-    sceDisplayWaitVblankStart();
+    sceDisplayWaitVblank();
 }
 
 void Screen::toggleScalingMode(void)
