@@ -3,6 +3,8 @@
 #include "FileSystemUtils.h"
 #include "Vlogging.h"
 
+#include <pspkernel.h>
+
 // Used to load PNG data
 extern "C"
 {
@@ -34,22 +36,28 @@ static SDL_Surface* LoadImage(const char *filename, bool noBlend = true, bool no
 
     unsigned char *fileIn;
     size_t length;
+    vlog_debug("- Loading image to memory");
     FILESYSTEM_loadAssetToMemory(filename, &fileIn, &length, false);
     if (fileIn == NULL)
     {
+        vlog_debug("-! Image file missing");
         SDL_assert(0 && "Image file missing!");
         return NULL;
     }
     if (noAlpha)
     {
+        vlog_debug("- Decoding without alpha");
         lodepng_decode24(&data, &width, &height, fileIn, length);
     }
     else
     {
+        vlog_debug("- Decoding with alpha");
         lodepng_decode32(&data, &width, &height, fileIn, length);
     }
+    vlog_debug("- Freeing memory");
     FILESYSTEM_freeMemory(&fileIn);
 
+    vlog_debug("- Creating surface");
     loadedImage = SDL_CreateRGBSurfaceWithFormatFrom(
         data,
         width,

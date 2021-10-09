@@ -919,7 +919,7 @@ void editorrender(void)
                 tpoint.x = ed.ghosts[i].x;
                 tpoint.y = ed.ghosts[i].y;
                 graphics.setcolreal(ed.ghosts[i].realcol);
-                Uint32 alpha = graphics.ct.colour & graphics.backBuffer->format->Amask;
+                Uint32 alpha = graphics.ct.colour & graphics.backBuffer.surface->format->Amask;
                 Uint32 therest = graphics.ct.colour & 0x00FFFFFF;
                 alpha = (3 * (alpha >> 24) / 4) << 24;
                 graphics.ct.colour = therest | alpha;

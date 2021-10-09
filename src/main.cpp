@@ -1,3 +1,4 @@
+#include "pspmoduleinfo.h"
 #include <SDL2/SDL.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -33,6 +34,7 @@
 #include "VRAM.h"
 
 PSP_MODULE_INFO("VVVVVV", 0, 1, 0);
+PSP_HEAP_SIZE_KB(16 * 1024);
 
 scriptclass script;
 
@@ -399,135 +401,16 @@ int main(int argc, char *argv[])
     pspDebugScreenInit();
     vlog_init();
 
+    vlog_debug("Free mem: %.1f MB", (float)sceKernelTotalFreeMemSize() / (1024 * 1024));
+
     psp_setup_callbacks();
     vram::init();
-
-    for (int i = 1; i < argc; ++i)
-    {
-#define ARG(name) (SDL_strcmp(argv[i], name) == 0)
-#define ARG_INNER(code) \
-    if (i + 1 < argc) \
-    { \
-        code \
-    } \
-    else \
-    { \
-        vlog_error("%s option requires one argument.", argv[i]); \
-        VVV_exit(1); \
-    }
-
-        if (ARG("-renderer"))
-        {
-            ARG_INNER({
-                i++;
-                SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, argv[i], SDL_HINT_OVERRIDE);
-            })
-        }
-        else if (ARG("-basedir"))
-        {
-            ARG_INNER({
-                i++;
-                baseDir = argv[i];
-            })
-        }
-        else if (ARG("-assets"))
-        {
-            ARG_INNER({
-                i++;
-                assetsPath = argv[i];
-            })
-        }
-        else if (ARG("-playing") || ARG("-p"))
-        {
-            ARG_INNER({
-                i++;
-                startinplaytest = true;
-                playtestname = std::string("levels/");
-                playtestname.append(argv[i]);
-                playtestname.append(std::string(".vvvvvv"));
-            })
-        }
-        else if (ARG("-playx") || ARG("-playy") ||
-        ARG("-playrx") || ARG("-playry") ||
-        ARG("-playgc") || ARG("-playmusic"))
-        {
-            ARG_INNER({
-                savefileplaytest = true;
-                int v = help.Int(argv[i+1]);
-                if (ARG("-playx")) savex = v;
-                else if (ARG("-playy")) savey = v;
-                else if (ARG("-playrx")) saverx = v;
-                else if (ARG("-playry")) savery = v;
-                else if (ARG("-playgc")) savegc = v;
-                else if (ARG("-playmusic")) savemusic = v;
-                i++;
-            })
-        }
-        else if (ARG("-playassets"))
-        {
-            ARG_INNER({
-                i++;
-                // Even if this is a directory, FILESYSTEM_mountAssets() expects '.vvvvvv' on the end
-                playassets = "levels/" + std::string(argv[i]) + ".vvvvvv";
-            })
-        }
-        else if (ARG("-nooutput"))
-        {
-            vlog_toggle_output(0);
-        }
-        else if (ARG("-forcecolor") || ARG("-forcecolour"))
-        {
-            vlog_toggle_color(1);
-        }
-        else if (ARG("-nocolor") || ARG("-nocolour"))
-        {
-            vlog_toggle_color(0);
-        }
-        else if (ARG("-debug"))
-        {
-            vlog_toggle_debug(1);
-        }
-        else if (ARG("-noinfo"))
-        {
-            vlog_toggle_info(0);
-        }
-        else if (ARG("-nowarn"))
-        {
-            vlog_toggle_warn(0);
-        }
-        else if (ARG("-noerror"))
-        {
-            vlog_toggle_error(0);
-        }
-#undef ARG_INNER
-#undef ARG
-        else
-        {
-            vlog_error("Error: invalid option: %s", argv[i]);
-            VVV_exit(1);
-        }
-    }
 
     if(!FILESYSTEM_init(argv[0], baseDir, assetsPath))
     {
         vlog_error("Unable to initialize filesystem!");
         VVV_exit(1);
     }
-
-    vlog_info("Initializing SDL");
-    SDL_Init(
-        SDL_INIT_VIDEO |
-        SDL_INIT_AUDIO |
-        SDL_INIT_JOYSTICK |
-        SDL_INIT_GAMECONTROLLER
-    );
-    if (SDL_IsTextInputActive() == SDL_TRUE)
-    {
-        SDL_StopTextInput();
-    }
-
-    vlog_info("Initializing networking (should be a noop)");
-    NETWORK_init();
 
     // Sorry Terry, but noone is going to see Viridian anyways.
 #if 0
@@ -562,13 +445,7 @@ int main(int argc, char *argv[])
     vlog_info("\t\t");
 #endif
 
-    //Set up screen
-
-
-
-
     // Load Ini
-
 
     vlog_info("Initializing graphics");
     graphics.init();
@@ -584,12 +461,6 @@ int main(int argc, char *argv[])
          * display the error message, and we have to bail. */
         pspDebugScreenInit();
         vlog_error("%s: %s", graphics.error_title, graphics.error);
-        //SDL_ShowSimpleMessageBox(
-        //    SDL_MESSAGEBOX_ERROR,
-        //    graphics.error_title,
-        //    graphics.error,
-        //    NULL
-        //);
 
         VVV_exit(1);
     }

@@ -256,9 +256,9 @@ void BlitSurfaceTinted(
 
             double gray = SDL_floor((temp_pixred + temp_pixgreen + temp_pixblue + 0.5));
 
-            Uint8 ctred = (ct.colour & graphics.backBuffer->format->Rmask) >> 16;
-            Uint8 ctgreen = (ct.colour & graphics.backBuffer->format->Gmask) >> 8;
-            Uint8 ctblue = (ct.colour & graphics.backBuffer->format->Bmask) >> 0;
+            Uint8 ctred = (ct.colour & graphics.backBuffer.surface->format->Rmask) >> 16;
+            Uint8 ctgreen = (ct.colour & graphics.backBuffer.surface->format->Gmask) >> 8;
+            Uint8 ctblue = (ct.colour & graphics.backBuffer.surface->format->Bmask) >> 0;
 
             temp_pixred = gray * ctred / 255.0;
             temp_pixgreen = gray * ctgreen / 255.0;

@@ -13,6 +13,10 @@
 #include "Unused.h"
 #include "UtilityClass.h"
 #include "Vlogging.h"
+#include "RAM.h"
+
+#include <pspkernel.h>
+#include <pspdebug.h>
 
 /* These are needed for PLATFORM_* crap */
 #if defined(_WIN32)
@@ -49,12 +53,12 @@ static int PLATFORM_getOSDirectory(char* output, const size_t output_size);
 
 static void* bridged_malloc(PHYSFS_uint64 size)
 {
-    return SDL_malloc(size);
+    return RAM_malloc(size);
 }
 
 static void* bridged_realloc(void* ptr, PHYSFS_uint64 size)
 {
-    return SDL_realloc(ptr, size);
+    return RAM_realloc(ptr, size);
 }
 
 static const PHYSFS_Allocator allocator = {
@@ -62,7 +66,7 @@ static const PHYSFS_Allocator allocator = {
     NULL,
     bridged_malloc,
     bridged_realloc,
-    SDL_free
+    RAM_free
 };
 
 int FILESYSTEM_init(char *argvZero, char* baseDir, char *assetsPath)
@@ -673,7 +677,7 @@ static void load_stdin(void)
      * initial size of 1K shouldn't hurt. */
 #define INITIAL_SIZE 1024
     size_t alloc_size = INITIAL_SIZE;
-    stdin_buffer = (unsigned char*) SDL_malloc(INITIAL_SIZE);
+    stdin_buffer = (unsigned char*) RAM_malloc(INITIAL_SIZE);
 #undef INITIAL_SIZE
 
     if (stdin_buffer == NULL)
@@ -726,37 +730,18 @@ void FILESYSTEM_loadFileToMemory(
     PHYSFS_sint64 length;
     PHYSFS_sint64 success;
 
+    vlog_info("Loading file %s to memory", name);
+
     if (name == NULL || mem == NULL)
     {
+        vlog_error("name is null");
         goto fail;
-    }
-
-    if (SDL_strcmp(name, "levels/special/stdin.vvvvvv") == 0)
-    {
-        // this isn't *technically* necessary when piping directly from a file, but checking for that is annoying
-        if (stdin_buffer == NULL)
-        {
-            load_stdin();
-        }
-
-        *mem = (unsigned char*) SDL_malloc(stdin_length + 1); /* + 1 for null */
-        if (*mem == NULL)
-        {
-            VVV_exit(1);
-        }
-
-        if (len != NULL)
-        {
-            *len = stdin_length;
-        }
-
-        SDL_memcpy((void*) *mem, (void*) stdin_buffer, stdin_length + 1);
-        return;
     }
 
     handle = PHYSFS_openRead(name);
     if (handle == NULL)
     {
+        vlog_error("- Handle is NULL: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
         goto fail;
     }
     length = PHYSFS_fileLength(handle);
@@ -770,7 +755,7 @@ void FILESYSTEM_loadFileToMemory(
     }
     if (addnull)
     {
-        *mem = (unsigned char *) SDL_malloc(length + 1);
+        *mem = (unsigned char *) RAM_malloc(length + 1);
         if (*mem == NULL)
         {
             VVV_exit(1);
@@ -779,7 +764,7 @@ void FILESYSTEM_loadFileToMemory(
     }
     else
     {
-        *mem = (unsigned char*) SDL_malloc(length);
+        *mem = (unsigned char*) RAM_malloc(length);
         if (*mem == NULL)
         {
             VVV_exit(1);
@@ -879,7 +864,7 @@ bool FILESYSTEM_loadBinaryBlob(binaryBlob* blob, const char* filename)
         }
 
         PHYSFS_seek(handle, offset);
-        *memblock = (char*) SDL_malloc(header->size);
+        *memblock = (char*) RAM_malloc(header->size);
         if (*memblock == NULL)
         {
             VVV_exit(1); /* Oh god we're out of memory, just bail */
@@ -953,6 +938,7 @@ bool FILESYSTEM_loadTiXml2Document(const char *name, tinyxml2::XMLDocument& doc)
 {
     /* XMLDocument.LoadFile doesn't account for Unicode paths, PHYSFS does */
     unsigned char *mem;
+    vlog_info("Loading XML %s", name);
     FILESYSTEM_loadFileToMemory(name, &mem, NULL, true);
     if (mem == NULL)
     {

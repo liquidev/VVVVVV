@@ -15,6 +15,18 @@
 #include "UtilityClass.h"
 #include "Vlogging.h"
 
+Graphics::Graphics()
+: backBuffer()
+, menubuffer()
+, foregroundBuffer()
+, tempBuffer()
+, warpbuffer()
+, warpbuffer_lerp()
+, footerbuffer()
+, ghostbuffer()
+{
+}
+
 void Graphics::init(void)
 {
     flipmode = false;
@@ -100,20 +112,12 @@ void Graphics::init(void)
     ingame_fademode = 0;
 
     // initialize everything else to zero
-    backBuffer = NULL;
     ct = colourTransform();
     foregrounddrawn = false;
-    foregroundBuffer = NULL;
     backgrounddrawn = false;
     m = 0;
     linedelay = 0;
-    menubuffer = NULL;
     screenbuffer = NULL;
-    tempBuffer = NULL;
-    warpbuffer = NULL;
-    warpbuffer_lerp = NULL;
-    footerbuffer = NULL;
-    ghostbuffer = NULL;
     towerbg = TowerBG();
     titlebg = TowerBG();
     trinketr = 0;
@@ -184,28 +188,15 @@ void Graphics::create_buffers(const SDL_PixelFormat* fmt)
             fmt->BitsPerPixel, \
             fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask \
         )
-    backBuffer = CREATE_SURFACE(320, 240);
     SDL_SetSurfaceBlendMode(backBuffer, SDL_BLENDMODE_NONE);
-
-    footerbuffer = CREATE_SURFACE(320, 10);
     SDL_SetSurfaceBlendMode(footerbuffer, SDL_BLENDMODE_BLEND);
     SDL_SetSurfaceAlphaMod(footerbuffer, 127);
     FillRect(footerbuffer, SDL_MapRGB(fmt, 0, 0, 0));
-
-    ghostbuffer = CREATE_SURFACE(320, 240);
     SDL_SetSurfaceBlendMode(ghostbuffer, SDL_BLENDMODE_BLEND);
     SDL_SetSurfaceAlphaMod(ghostbuffer, 127);
-
-    foregroundBuffer =  CREATE_SURFACE(320, 240);
     SDL_SetSurfaceBlendMode(foregroundBuffer, SDL_BLENDMODE_BLEND);
-
-    menubuffer = CREATE_SURFACE(320, 240);
     SDL_SetSurfaceBlendMode(menubuffer, SDL_BLENDMODE_NONE);
-
-    warpbuffer = CREATE_SURFACE(320 + 16, 240 + 16);
     SDL_SetSurfaceBlendMode(warpbuffer, SDL_BLENDMODE_NONE);
-
-    warpbuffer_lerp = CREATE_SURFACE(320 + 16, 240 + 16);
     SDL_SetSurfaceBlendMode(warpbuffer_lerp, SDL_BLENDMODE_NONE);
 
     towerbg.buffer =  CREATE_SURFACE(320 + 16, 240 + 16);
@@ -220,7 +211,6 @@ void Graphics::create_buffers(const SDL_PixelFormat* fmt)
     titlebg.buffer_lerp = CREATE_SURFACE(320 + 16, 240 + 16);
     SDL_SetSurfaceBlendMode(titlebg.buffer_lerp, SDL_BLENDMODE_NONE);
 
-    tempBuffer = CREATE_SURFACE(320, 240);
     SDL_SetSurfaceBlendMode(tempBuffer, SDL_BLENDMODE_NONE);
 
     #undef CREATE_SURFACE
@@ -232,18 +222,10 @@ void Graphics::destroy_buffers(void)
     SDL_FreeSurface(SURFACE); \
     SURFACE = NULL;
 
-    FREE_SURFACE(backBuffer)
-    FREE_SURFACE(footerbuffer)
-    FREE_SURFACE(ghostbuffer)
-    FREE_SURFACE(foregroundBuffer)
-    FREE_SURFACE(menubuffer)
-    FREE_SURFACE(warpbuffer)
-    FREE_SURFACE(warpbuffer_lerp)
     FREE_SURFACE(towerbg.buffer)
     FREE_SURFACE(towerbg.buffer_lerp)
     FREE_SURFACE(titlebg.buffer)
     FREE_SURFACE(titlebg.buffer_lerp)
-    FREE_SURFACE(tempBuffer)
 
 #undef FREE_SURFACE
 }
@@ -3001,7 +2983,7 @@ void Graphics::setcol( int t )
 void Graphics::menuoffrender(void)
 {
     const int usethisoffset = lerp(oldmenuoffset, menuoffset);
-    SDL_Rect offsetRect = {0, usethisoffset, backBuffer->w, backBuffer->h};
+    SDL_Rect offsetRect = {0, usethisoffset, backBuffer.Width, backBuffer.Height};
 
     BlitSurfaceStandard(backBuffer, NULL, menubuffer, NULL);
     BlitSurfaceStandard(tempBuffer, NULL, backBuffer, NULL);
@@ -3127,7 +3109,7 @@ void Graphics::flashlight(void)
 
 void Graphics::screenshake(void)
 {
-    SDL_Rect shakeRect = {screenshake_x, screenshake_y, backBuffer->w, backBuffer->h};
+    SDL_Rect shakeRect = {screenshake_x, screenshake_y, backBuffer.Width, backBuffer.Height};
     screenbuffer->UpdateScreen(backBuffer, &shakeRect);
 
     ClearSurface(backBuffer);
@@ -3258,12 +3240,12 @@ void Graphics::drawtele(int x, int y, int t, Uint32 c)
 
 Uint32 Graphics::getRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-    return SDL_MapRGBA(backBuffer->format, r, g, b, a);
+    return SDL_MapRGBA(backBuffer.surface->format, r, g, b, a);
 }
 
 Uint32 Graphics::getRGB(Uint8 r, Uint8 g, Uint8 b)
 {
-    return SDL_MapRGB(backBuffer->format, r, g, b);
+    return SDL_MapRGB(backBuffer.surface->format, r, g, b);
 }
 
 Uint32 Graphics::getRGB(Uint32 _col)
@@ -3276,7 +3258,7 @@ Uint32 Graphics::RGBf(int r, int g, int b)
     r = (r+128) / 3;
     g = (g+128) / 3;
     b = (b+128) / 3;
-    return SDL_MapRGB(backBuffer->format, r, g, b);
+    return SDL_MapRGB(backBuffer.surface->format, r, g, b);
 }
 
 void Graphics::setcolreal(Uint32 t)

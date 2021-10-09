@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "Alloc.h"
 #include "GraphicsResources.h"
 #include "GraphicsUtil.h"
 #include "Maths.h"
@@ -15,6 +16,8 @@
 class Graphics
 {
 public:
+    Graphics();
+
     void init(void);
     void destroy(void);
 
@@ -241,6 +244,7 @@ public:
 
     int m;
 
+    // TODO: These definitely don't need to be vectors.
     std::vector <SDL_Surface*> images;
 
     std::vector <SDL_Surface*> tele;
@@ -257,13 +261,13 @@ public:
     bool setflipmode;
     bool notextoutline;
     //buffer objects. //TODO refactor buffer objects
-    SDL_Surface* backBuffer;
+    SurfaceRgba<320, 240> backBuffer;
     Screen* screenbuffer;
-    SDL_Surface* menubuffer;
-    SDL_Surface* foregroundBuffer;
-    SDL_Surface* tempBuffer;
-    SDL_Surface* warpbuffer;
-    SDL_Surface* warpbuffer_lerp;
+    SurfaceRgba<320, 240> menubuffer;
+    SurfaceRgba<320, 240> foregroundBuffer;
+    SurfaceRgba<320, 240> tempBuffer;
+    SurfaceRgba<320 + 16, 240 + 16> warpbuffer;
+    SurfaceRgba<320 + 16, 240 + 16> warpbuffer_lerp;
 
     TowerBG towerbg;
     TowerBG titlebg;
@@ -276,7 +280,7 @@ public:
 
     SDL_Rect prect;
     SDL_Rect footerrect;
-    SDL_Surface* footerbuffer;
+    SurfaceRgba<320, 10> footerbuffer;
 
     int linestate, linedelay;
     int backoffset;
@@ -323,7 +327,7 @@ public:
 
     std::map<int, int> font_positions;
 
-    SDL_Surface* ghostbuffer;
+    SurfaceRgba<320, 240> ghostbuffer;
 
     float inline lerp(const float v0, const float v1)
     {

@@ -32,7 +32,7 @@ void binaryBlob::AddFileToBinaryBlob(const char* _path)
         size = ftell(file);
         fseek(file, 0, SEEK_SET);
 
-        memblock = (char*) SDL_malloc(size);
+        memblock = (char*) RAM_malloc(size);
         if (memblock == NULL)
         {
             VVV_exit(1);

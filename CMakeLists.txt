@@ -19,7 +19,7 @@ option(MAKEANDPLAY "Compile a version of the game without the main campaign (pro
 if(${CMAKE_VERSION} VERSION_LESS "3.1.3")
     message(WARNING "Your CMake version is too old; set -std=c90 -std=c++11 yourself!")
 else()
-    set(CMAKE_C_STANDARD 90)
+    set(CMAKE_C_STANDARD 99)
     set(CMAKE_C_EXTENSIONS OFF)
 
     set(CMAKE_CXX_STANDARD 11)
@@ -68,6 +68,7 @@ set(VVV_SRC
     src/DeferCallbacks.c
     src/GlitchrunnerMode.c
     src/Network.c
+    src/RAM.c
     src/ThirdPartyDeps.c
     src/Vlogging.c
     src/VRAM.cpp

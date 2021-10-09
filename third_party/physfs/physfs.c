@@ -11,8 +11,6 @@
 #define __PHYSICSFS_INTERNAL__
 #include "physfs_internal.h"
 
-#include <pspdebug.h>
-
 #if defined(_MSC_VER)
 #include <stdarg.h>
 
@@ -1123,20 +1121,17 @@ static int initializeMutexes(void)
 {
     errorLock = __PHYSFS_platformCreateMutex();
     if (errorLock == NULL) {
-        pspDebugScreenPrintf("[physfs] Error lock could not be created\n");
         goto initializeMutexes_failed;
     }
 
     stateLock = __PHYSFS_platformCreateMutex();
     if (stateLock == NULL) {
-        pspDebugScreenPrintf("[physfs] State lock could not be created\n");
         goto initializeMutexes_failed;
     }
 
     return 1;  /* success. */
 
 initializeMutexes_failed:
-    pspDebugScreenPrintf("[physfs] Failed to initialize mutexes\n");
     if (errorLock != NULL)
         __PHYSFS_platformDestroyMutex(errorLock);
 
@@ -1203,13 +1198,11 @@ int PHYSFS_init(const char *argv0)
 {
     BAIL_IF(initialized, PHYSFS_ERR_IS_INITIALIZED, 0);
 
-    pspDebugScreenPrintf("[physfs] Initializing\n");
     if (!externalAllocator)
         setDefaultAllocator();
 
     if ((allocator.Init != NULL) && (!allocator.Init())) return 0;
 
-    pspDebugScreenPrintf("[physfs] Initializing platform\n");
     if (!__PHYSFS_platformInit())
     {
         if (allocator.Deinit != NULL) allocator.Deinit();
@@ -1218,14 +1211,11 @@ int PHYSFS_init(const char *argv0)
 
     /* everything below here can be cleaned up safely by doDeinit(). */
 
-    pspDebugScreenPrintf("[physfs] Initializing mutexes\n");
     if (!initializeMutexes()) goto initFailed;
 
-    pspDebugScreenPrintf("[physfs] Calculating base directory\n");
     baseDir = calculateBaseDir(argv0);
     if (!baseDir) goto initFailed;
 
-    pspDebugScreenPrintf("[physfs] Calculating user directory\n");
     userDir = __PHYSFS_platformCalcUserDir();
     if (!userDir) goto initFailed;
 
@@ -1233,10 +1223,8 @@ int PHYSFS_init(const char *argv0)
     assert(baseDir[strlen(baseDir) - 1] == __PHYSFS_platformDirSeparator);
     assert(userDir[strlen(userDir) - 1] == __PHYSFS_platformDirSeparator);
 
-    pspDebugScreenPrintf("[physfs] Initializing static archivers\n");
     if (!initStaticArchivers()) goto initFailed;
 
-    pspDebugScreenPrintf("[physfs] Initialize successful\n");
     initialized = 1;
 
     /* This makes sure that the error subsystem is initialized. */
@@ -1245,7 +1233,6 @@ int PHYSFS_init(const char *argv0)
     return 1;
 
 initFailed:
-    pspDebugScreenPrintf("[physfs] Failed, deinitializing\n");
     doDeinit();
     return 0;
 } /* PHYSFS_init */
