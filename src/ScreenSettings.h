@@ -1,6 +1,13 @@
 #ifndef SCREENSETTINGS_H
 #define SCREENSETTINGS_H
 
+enum ScreenScaling {
+    ssOneToOne,
+    ssFourToThree,
+    ssFullscreen,
+    ss_Last,
+};
+
 struct ScreenSettings
 {
     ScreenSettings(void);
@@ -9,7 +16,7 @@ struct ScreenSettings
     int windowHeight;
     bool fullscreen;
     bool useVsync;
-    int stretch;
+    ScreenScaling scalingMode;
     bool linearFilter;
     bool badSignal;
 };

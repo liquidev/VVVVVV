@@ -571,20 +571,22 @@ static void menuactionpress(void)
         {
         case 0:
             music.playef(11);
-            graphics.screenbuffer->toggleFullScreen();
+            // TODO: Remove this setting
+            // graphics.screenbuffer->toggleFullScreen();
             game.savestatsandsettings_menu();
             break;
         case 1:
+            // TODO: Change this setting's name
             music.playef(11);
-            graphics.screenbuffer->toggleStretchMode();
+            graphics.screenbuffer->toggleScalingMode();
             game.savestatsandsettings_menu();
             break;
         case 2:
+            // TODO: Remove this setting
             // resize to nearest multiple
             if (graphics.screenbuffer->isWindowed)
             {
                 music.playef(11);
-                graphics.screenbuffer->ResizeToNearestMultiple();
                 game.savestatsandsettings_menu();
             }
             else

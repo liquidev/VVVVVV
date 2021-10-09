@@ -1921,13 +1921,13 @@ void editorinput(void)
     game.my = (float) key.my;
     ed.tilex=(game.mx - (game.mx%8))/8;
     ed.tiley=(game.my - (game.my%8))/8;
-    if (graphics.screenbuffer->stretchMode == 1) {
-        // In this mode specifically, we have to fix the mouse coordinates
-        int winwidth, winheight;
-        graphics.screenbuffer->GetWindowSize(&winwidth, &winheight);
-        ed.tilex = ed.tilex * 320 / winwidth;
-        ed.tiley = ed.tiley * 240 / winheight;
-    }
+    // if (graphics.screenbuffer->stretchMode == 1) {
+    //     // In this mode specifically, we have to fix the mouse coordinates
+    //     int winwidth, winheight;
+    //     graphics.screenbuffer->GetWindowSize(&winwidth, &winheight);
+    //     ed.tilex = ed.tilex * 320 / winwidth;
+    //     ed.tiley = ed.tiley * 240 / winheight;
+    // }
 
     bool up_pressed = key.isDown(SDLK_UP) || key.isDown(SDL_CONTROLLER_BUTTON_DPAD_UP);
     bool down_pressed = key.isDown(SDLK_DOWN) || key.isDown(SDL_CONTROLLER_BUTTON_DPAD_DOWN);

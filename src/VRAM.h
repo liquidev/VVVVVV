@@ -17,9 +17,9 @@ namespace vram {
 
     void init();
 
-    extern Allocation display;
-    extern Allocation depth;
-    extern Allocation screenBuffer;
+    Allocation allocate(const char *what, size_t size);
+    Allocation allocateTexture16(const char *what, size_t width, size_t height);
+    Allocation allocateTexture32(const char *what, size_t width, size_t height);
 }
 
 #endif

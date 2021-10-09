@@ -2,7 +2,6 @@
 
 #include <pspge.h>
 
-#include "Screen.h"
 #include "Vlogging.h"
 
 // An allocator for chunks of VRAM.
@@ -17,11 +16,14 @@ struct Allocator {
     {
     }
 
-    inline vram::Allocation next(const char *what, size_t size) {
+    inline vram::Allocation next(const char *what, size_t size)
+    {
         size_t loc = position;
         position += size;
         if (position - origin > sceGeEdramGetSize()) {
             vlog_error("Out of VRAM (allocation '%s')", what);
+        } else {
+            vlog_debug("VRAM allocation '%s' at %p", what, (void *)loc);
         }
         // Align position to 16 bytes.
         position = (position + 15) & ~15;
@@ -32,20 +34,29 @@ struct Allocator {
     }
 };
 
+static Allocator allocator{nullptr};
+
 namespace vram {
     Allocation display;
     Allocation depth;
     Allocation screenBuffer;
 
     void init() {
-        Allocator allocator(sceGeEdramGetAddr());
+        allocator = Allocator(sceGeEdramGetAddr());
+    }
 
-        const size_t display_size = DISPLAY_WIDTH_POT * DISPLAY_HEIGHT;
-        display = allocator.next("display front buffer", display_size * 4);
-        depth = allocator.next("display depth buffer", display_size * 2);
-        screenBuffer = allocator.next("game screen texture", SCREEN_WIDTH_VRAM * SCREEN_HEIGHT_VRAM * SCREEN_CHANNELS);
+    Allocation allocate(const char *what, size_t size)
+    {
+        return allocator.next(what, size);
+    }
 
-        vlog_info("display front address: %p", display.ptr);
-        vlog_info(" screenBuffer address: %p", screenBuffer.ptr);
+    Allocation allocateTexture16(const char *what, size_t width, size_t height)
+    {
+        return allocate(what, width * height * 2);
+    }
+
+    Allocation allocateTexture32(const char *what, size_t width, size_t height)
+    {
+        return allocate(what, width * height * 4);
     }
 }

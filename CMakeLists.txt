@@ -266,7 +266,7 @@ target_link_libraries(VVVVVV
     pspdebug
     pspdisplay
     pspge
-    # pspctrl
+    pspctrl
     pspsdk
     c
     pspnet

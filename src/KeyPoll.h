@@ -38,8 +38,6 @@ public:
 
     bool resetWindow;
 
-    void toggleFullscreen(void);
-
     int sensitivity;
 
     int inline getThreshold(void);
@@ -70,7 +68,7 @@ public:
     bool linealreadyemptykludge;
 
 private:
-    std::map<SDL_JoystickID, SDL_GameController*> controllers;
+    // std::map<SDL_JoystickID, SDL_GameController*> controllers;
     std::map<SDL_GameControllerButton, bool> buttonmap;
     int xVel, yVel;
     Uint32 wasFullscreen;

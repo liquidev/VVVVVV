@@ -312,22 +312,23 @@ static void menurender(void)
 
         case 1:
             graphics.bigprint( -1, 30, "Scaling Mode", tr, tg, tb, true);
-            graphics.Print( -1, 65, "Choose letterbox/stretch/integer mode.", tr, tg, tb, true);
+            graphics.Print( -1, 65, "Choose 1:1/4:3 fill/fullscreen mode.", tr, tg, tb, true);
 
-            switch (graphics.screenbuffer->stretchMode)
+            switch (graphics.screenbuffer->scalingMode)
             {
             case 2:
-                graphics.Print( -1, 85, "Current mode: INTEGER", tr, tg, tb, true);
+                graphics.Print( -1, 85, "Current mode: 1:1", tr, tg, tb, true);
                 break;
             case 1:
-                graphics.Print( -1, 85, "Current mode: STRETCH", tr, tg, tb, true);
+                graphics.Print( -1, 85, "Current mode: 4:3 FILL", tr, tg, tb, true);
                 break;
             default:
-                graphics.Print( -1, 85, "Current mode: LETTERBOX", tr, tg, tb, true);
+                graphics.Print( -1, 85, "Current mode: FULLSCREEN", tr, tg, tb, true);
                 break;
             }
             break;
         case 2:
+            // TODO: Remove this option
             graphics.bigprint(-1, 30, "Resize to Nearest", tr, tg, tb, true);
             graphics.Print(-1, 65, "Resize to the nearest window size", tr, tg, tb, true);
             graphics.Print(-1, 75, "that is of an integer multiple.", tr, tg, tb, true);

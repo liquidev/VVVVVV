@@ -14,6 +14,7 @@
 #include <pspgu.h>
 #include <pspdebug.h>
 #include <psputils.h>
+#include <utility>
 
 ScreenSettings::ScreenSettings(void)
 {
@@ -21,7 +22,7 @@ ScreenSettings::ScreenSettings(void)
     windowHeight = 240;
     fullscreen = false;
     useVsync = true; // Now that uncapped is the default...
-    stretch = 0;
+    scalingMode = ssOneToOne;
     linearFilter = false;
     badSignal = false;
 }
@@ -30,13 +31,19 @@ void Screen::init(const ScreenSettings& settings)
 {
     m_screen = NULL;
     isWindowed = !settings.fullscreen;
-    stretchMode = settings.stretch;
+    scalingMode = settings.scalingMode;
     isFiltered = settings.linearFilter;
     vsync = settings.useVsync;
     filterSubrect.x = 1;
     filterSubrect.y = 1;
     filterSubrect.w = 318;
     filterSubrect.h = 238;
+
+    displayFront = vram::allocateTexture32("display front buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
+    displayBack = vram::allocateTexture32("display back buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
+    depth = vram::allocateTexture16("depth buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
+    screenTexture = vram::allocateTexture32("screen texture", SCREEN_WIDTH_VRAM, SCREEN_HEIGHT_VRAM);
+    drawBuffer = displayBack;
 
     m_screen = SDL_CreateRGBSurfaceFrom(
         (void *)&_screenData,
@@ -55,9 +62,9 @@ void Screen::init(const ScreenSettings& settings)
     sceGuStart(GU_DIRECT, _drawList);
 
     // Buffers
-    sceGuDrawBuffer(GU_PSM_8888, vram::display, DISPLAY_WIDTH_POT);
-    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, vram::display, DISPLAY_WIDTH_POT);
-    sceGuDepthBuffer(vram::depth, 512);
+    sceGuDrawBuffer(GU_PSM_8888, displayBack, DISPLAY_WIDTH_POT);
+    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFront, DISPLAY_WIDTH_POT);
+    sceGuDepthBuffer(depth, DISPLAY_WIDTH_POT);
     // Offsets
     sceGuOffset(2048 - (DISPLAY_WIDTH/2), 2048 - (DISPLAY_HEIGHT/2));
     sceGuViewport(2048, 2048, DISPLAY_WIDTH, DISPLAY_HEIGHT);
@@ -76,13 +83,7 @@ void Screen::init(const ScreenSettings& settings)
     sceDisplayWaitVblankStart();
     sceGuDisplay(true);
 
-    sceDisplaySetMode(0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-    sceDisplaySetFrameBuf(
-        vram::display,
-        DISPLAY_WIDTH_POT,
-        PSP_DISPLAY_PIXEL_FORMAT_8888,
-        PSP_DISPLAY_SETBUF_NEXTFRAME
-    );
+    // sceDisplaySetMode(0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
     badSignalEffect = settings.badSignal;
 }
@@ -93,33 +94,14 @@ void Screen::destroy(void)
 
 void Screen::GetSettings(ScreenSettings* settings)
 {
-    int width, height;
-    GetWindowSize(&width, &height);
-
-    settings->windowWidth = width;
-    settings->windowHeight = height;
+    settings->windowWidth = DISPLAY_WIDTH;
+    settings->windowHeight = DISPLAY_HEIGHT;
 
     settings->fullscreen = !isWindowed;
     settings->useVsync = vsync;
-    settings->stretch = stretchMode;
+    settings->scalingMode = scalingMode;
     settings->linearFilter = isFiltered;
     settings->badSignal = badSignalEffect;
-}
-
-void Screen::ResizeScreen(int x, int y)
-{
-    // TODO
-}
-
-void Screen::ResizeToNearestMultiple(void)
-{
-    // TODO
-}
-
-void Screen::GetWindowSize(int* x, int* y)
-{
-    *x = DISPLAY_WIDTH;
-    *y = DISPLAY_HEIGHT;
 }
 
 void Screen::UpdateScreen(SDL_Surface* buffer, SDL_Rect* rect)
@@ -150,57 +132,39 @@ const SDL_PixelFormat* Screen::GetFormat(void)
     return m_screen->format;
 }
 
-static int _frame_count = 0;
+SDL_Rect Screen::screenRect() {
+    float hscale = 1.0f, vscale = 1.0f;
 
-void Screen::FlipScreen(const bool flipmode)
+    float width = hscale * SCREEN_WIDTH;
+    float height = vscale * SCREEN_HEIGHT;
+    return {
+        int((float(DISPLAY_WIDTH) - width) / 2.0f),
+        int((float(DISPLAY_HEIGHT) - height) / 2.0f),
+        int(width),
+        int(height),
+    };
+}
+
+static void drawRectangle(const SDL_Rect &position, const SDL_Rect &uv)
 {
-    SDL_RendererFlip flip_flags;
-    if (flipmode)
-    {
-        flip_flags = SDL_FLIP_VERTICAL;
-    }
-    else
-    {
-        flip_flags = SDL_FLIP_NONE;
-    }
-
-    // TODO(PSP): Fleeeep
-
-    sceGuStart(GU_DIRECT, _drawList);
-
-    sceGuClearColor(0xFF0000);
-    sceGuClear(GU_COLOR_BUFFER_BIT);
-
     struct Vertex {
         uint16_t u, v;
         int16_t x, y, z;
-        // uint8_t _pad[2];
     };
     Vertex *verts = (Vertex *)sceGuGetMemory(2 * sizeof(Vertex));
-    verts[0] = { 0, 0,           0, 0, 0 };
-    verts[1] = { 65535, 65535,   512, 256, 0 };
+    int16_t
+        x1 = position.x,
+        y1 = position.y,
+        x2 = position.x + position.w,
+        y2 = position.y + position.h;
+    uint16_t
+        uvx1 = uv.x,
+        uvy1 = uv.y,
+        uvx2 = uv.x + uv.w,
+        uvy2 = uv.y + uv.h;
+    verts[0] = { uvx1, uvy1,  x1, y1, 0 };
+    verts[1] = { uvx2, uvy2,  x2, y2, 0 };
 
-    for (int y = 0; y < 32; ++y) {
-        for (int x = 0; x < 32; ++x) {
-            int i = (x + y * SCREEN_WIDTH_VRAM) * 4;
-            _screenData[i] = x;
-            _screenData[i + 1] = y;
-            _screenData[i + 2] = 0;
-            _screenData[i + 3] = 0;
-        }
-    }
-
-    sceGuCopyImage(
-        GU_PSM_8888,
-        0, 0, SCREEN_WIDTH_VRAM, SCREEN_HEIGHT_VRAM,
-        SCREEN_WIDTH_VRAM, _screenData,
-        0, 0,
-        SCREEN_WIDTH_VRAM, vram::screenBuffer
-    );
-    sceGuTexMode(GU_PSM_8888, 1, 0, false);
-    sceGuTexImage(0, SCREEN_WIDTH_VRAM, SCREEN_HEIGHT_VRAM, SCREEN_WIDTH_VRAM, vram::screenBuffer);
-    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
-    sceGuTexFilter(GU_NEAREST, GU_NEAREST);
     sceGuDrawArray(
         GU_SPRITES,
         GU_TRANSFORM_2D | GU_TEXTURE_16BIT | GU_VERTEX_16BIT,
@@ -208,51 +172,53 @@ void Screen::FlipScreen(const bool flipmode)
         nullptr,
         (void *)verts
     );
+}
 
-    ++_frame_count;
-    if (_frame_count == 60 * 3) {
-        sceGuClearColor(0xFFFFFF);
-        sceGuClear(GU_COLOR_BUFFER_BIT);
-        SDL_SaveBMP(m_screen, "/conk_conk.bmp");
-    }
+void Screen::FlipScreen(const bool flipmode)
+{
+    // TODO(PSP): Fleeeep
+    // Implement flip mode.
 
+    sceGuStart(GU_DIRECT, _drawList);
+
+    // Do our own buffer swapping procedure because sceGuSwapBuffers doesn't work.
+    std::swap(displayFront, displayBack);
+    sceGuDrawBuffer(GU_PSM_8888, displayBack, DISPLAY_WIDTH_POT);
+    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFront, DISPLAY_WIDTH_POT);
+    sceDisplaySetFrameBuf(displayFront, DISPLAY_WIDTH_POT, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
+
+    sceGuClearColor(0xFF0000);
+    sceGuClear(GU_COLOR_BUFFER_BIT);
+
+    sceGuCopyImage(
+        GU_PSM_8888,
+        0, 0, SCREEN_WIDTH_VRAM, SCREEN_HEIGHT_VRAM,
+        SCREEN_WIDTH_VRAM, _screenData,
+        0, 0,
+        SCREEN_WIDTH_VRAM, screenTexture
+    );
     sceGuTexSync();
+
+    sceGuTexMode(GU_PSM_8888, 1, 0, false);
+    sceGuTexImage(0, SCREEN_WIDTH_VRAM, SCREEN_HEIGHT_VRAM, SCREEN_WIDTH_VRAM, screenTexture);
+    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+    int filter = isFiltered ? GU_LINEAR : GU_NEAREST;
+    sceGuTexFilter(filter, filter);
+    drawRectangle(screenRect(), {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT});
+
     sceGuFinish();
     sceGuSync(0, 0);
 
-    pspDebugScreenSetOffset((int)(size_t)vram::screenBuffer.ptr);
-    pspDebugScreenSetXY(0, 0);
-
-    sceDisplayWaitVblank();
+    // Swap buffers
+    sceDisplayWaitVblankStart();
 }
 
-void Screen::toggleFullScreen(void)
+void Screen::toggleScalingMode(void)
 {
-    isWindowed = !isWindowed;
-    ResizeScreen(-1, -1);
-
-    if (game.currentmenuname == Menu::graphicoptions)
-    {
-        /* Recreate menu to update "resize to nearest" */
-        game.createmenu(game.currentmenuname, true);
-    }
-}
-
-void Screen::toggleStretchMode(void)
-{
-    stretchMode = (stretchMode + 1) % 3;
-    ResizeScreen(-1, -1);
+    scalingMode = ScreenScaling((int(scalingMode) + 1) % int(ss_Last));
 }
 
 void Screen::toggleLinearFilter(void)
 {
     isFiltered = !isFiltered;
-}
-
-void Screen::toggleVSync(void)
-{
-#if SDL_VERSION_ATLEAST(2, 0, 17)
-    vsync = !vsync;
-    SDL_RenderSetVSync(m_renderer, (int) vsync);
-#endif
 }

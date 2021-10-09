@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "ScreenSettings.h"
+#include "VRAM.h"
 
 static const int SCREEN_WIDTH = 320;
 static const int SCREEN_HEIGHT = 240;
@@ -31,24 +32,20 @@ public:
     // PSP doesn't have window icons.
     // void LoadIcon(void);
 
-    void ResizeScreen(int x, int y);
-    void ResizeToNearestMultiple(void);
-    void GetWindowSize(int* x, int* y);
+    SDL_Rect screenRect();
 
     void UpdateScreen(SDL_Surface* buffer, SDL_Rect* rect);
     void FlipScreen(bool flipmode);
 
     const SDL_PixelFormat* GetFormat(void);
 
-    void toggleFullScreen(void);
-    void toggleStretchMode(void);
+    void toggleScalingMode(void);
     void toggleLinearFilter(void);
-    void toggleVSync(void);
 
     bool isWindowed;
     bool isFiltered;
     bool badSignalEffect;
-    int stretchMode;
+    ScreenScaling scalingMode;
     bool vsync;
 
     SDL_Surface* m_screen;
@@ -57,6 +54,13 @@ public:
 private:
     uint8_t _screenData[SCREEN_WIDTH_VRAM * SCREEN_HEIGHT_VRAM * 4];
     uint8_t __attribute__((aligned(16))) _drawList[1024*1024]; // Increase if needed
+
+    vram::Allocation displayFront;
+    vram::Allocation displayBack;
+    vram::Allocation depth;
+    vram::Allocation screenTexture;
+
+    void *drawBuffer;
 };
 
 

@@ -4123,10 +4123,11 @@ void Game::deserializesettings(tinyxml2::XMLElement* dataNode, ScreenSettings* s
             screen_settings->fullscreen = help.Int(pText);
         }
 
-        if (SDL_strcmp(pKey, "stretch") == 0)
-        {
-            screen_settings->stretch = help.Int(pText);
-        }
+        // TODO: Config setting for scaling mode
+        // if (SDL_strcmp(pKey, "stretch") == 0)
+        // {
+        //     screen_settings->stretch = help.Int(pText);
+        // }
 
         if (SDL_strcmp(pKey, "useLinearFilter") == 0)
         {
@@ -4444,7 +4445,8 @@ void Game::serializesettings(tinyxml2::XMLElement* dataNode, const ScreenSetting
 
     xml::update_tag(dataNode, "fullscreen", (int) screen_settings->fullscreen);
 
-    xml::update_tag(dataNode, "stretch", screen_settings->stretch);
+    // TODO: Config setting for stretch mode
+    // xml::update_tag(dataNode, "stretch", screen_settings->stretch);
 
     xml::update_tag(dataNode, "useLinearFilter", (int) screen_settings->linearFilter);
 

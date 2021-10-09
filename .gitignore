@@ -13,6 +13,7 @@ src/Version.h.out
 
 # Game data
 data.zip
+data.psp
 
 # macOS files
 .DS_Store

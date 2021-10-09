@@ -30,6 +30,7 @@
 #include "Vlogging.h"
 
 #include <pspkernel.h>
+#include <pspctrl.h>
 #include <pspdebug.h>
 #include "VRAM.h"
 
@@ -405,6 +406,8 @@ int main(int argc, char *argv[])
 
     psp_setup_callbacks();
     vram::init();
+    sceCtrlSetSamplingCycle(0);
+    sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
     if(!FILESYSTEM_init(argv[0], baseDir, assetsPath))
     {
@@ -778,7 +781,6 @@ static enum LoopCode loop_end(void)
     if (key.resetWindow)
     {
         key.resetWindow = false;
-        gameScreen.ResizeScreen(-1, -1);
     }
 
     return Loop_continue;
