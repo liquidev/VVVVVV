@@ -52,7 +52,7 @@ public:
 
     bool isDown(SDL_Keycode key);
 
-    bool isDown(std::vector<SDL_GameControllerButton> buttons);
+    bool isDown(const std::vector<SDL_GameControllerButton> &buttons);
     bool isDown(SDL_GameControllerButton button);
     bool controllerButtonDown(void);
     bool controllerWantsLeft(bool includeVert);

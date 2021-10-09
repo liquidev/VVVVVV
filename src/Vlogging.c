@@ -1,3 +1,4 @@
+#include "pspdebug.h"
 #include <SDL2/SDL.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -31,6 +32,8 @@ static int info_enabled = 1;
 static int warn_enabled = 1;
 static int error_enabled = 1;
 
+static FILE *output_file = NULL;
+
 void vlog_init(void)
 {
 #ifdef _WIN32
@@ -51,6 +54,8 @@ void vlog_init(void)
     ) {
         color_enabled = 1;
     }
+
+    output_file = fopen("VVVVVV.log", "w");
 }
 
 void vlog_toggle_output(const int enable_output)
@@ -81,6 +86,13 @@ void vlog_toggle_warn(const int enable_warn)
 void vlog_toggle_error(const int enable_error)
 {
     error_enabled = enable_error;
+}
+
+void __vlog_common(const char *short_prefix, const char* long_prefix, const char *text)
+{
+    pspDebugScreenPrintf("%s %s\n", short_prefix, text);
+    fprintf(output_file, "%s %s\n", long_prefix, text);
+    fflush(output_file);
 }
 
 #if 0

@@ -35,29 +35,31 @@ SDL_PRINTF_VARARG_FUNC(1) int vlog_error(const char* text, ...);
 
 #endif
 
+void __vlog_common(const char *short_prefix, const char* long_prefix, const char *text);
+
 #define vlog_debug(...) \
    do { \
-      pspDebugScreenPrintf("[D] "); \
-      pspDebugScreenPrintf(__VA_ARGS__); \
-      pspDebugScreenPrintf("\n"); \
+      char str[1024] = {0}; \
+      sprintf(str, __VA_ARGS__); \
+      __vlog_common("[D]", "[DEBUG]", str); \
    } while (0)
 #define vlog_info(...) \
    do { \
-      pspDebugScreenPrintf("[I] "); \
-      pspDebugScreenPrintf(__VA_ARGS__); \
-      pspDebugScreenPrintf("\n"); \
+      char str[1024] = {0}; \
+      sprintf(str, __VA_ARGS__); \
+      __vlog_common("[I]", "[INFO]", str); \
    } while (0)
 #define vlog_warn(...) \
    do { \
-      pspDebugScreenPrintf("[W] "); \
-      pspDebugScreenPrintf(__VA_ARGS__); \
-      pspDebugScreenPrintf("\n"); \
+      char str[1024] = {0}; \
+      sprintf(str, __VA_ARGS__); \
+      __vlog_common("[W]", "[WARNING]", str); \
    } while (0)
 #define vlog_error(...) \
    do { \
-      pspDebugScreenPrintf("[E] "); \
-      pspDebugScreenPrintf(__VA_ARGS__); \
-      pspDebugScreenPrintf("\n"); \
+      char str[1024] = {0}; \
+      sprintf(str, __VA_ARGS__); \
+      __vlog_common("[E]", "[ERROR]", str); \
    } while (0)
 
 #ifdef __cplusplus

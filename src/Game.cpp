@@ -1,3 +1,4 @@
+#include "pspdebug.h"
 #define GAME_DEFINITION
 #include "Game.h"
 
