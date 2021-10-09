@@ -1,3 +1,4 @@
+#include "pspgu.h"
 #include "pspmoduleinfo.h"
 #include <SDL2/SDL.h>
 #ifdef __EMSCRIPTEN__
@@ -585,9 +586,6 @@ int main(int argc, char *argv[])
     gamestate_funcs = get_gamestate_funcs(game.gamestate, &num_gamestate_funcs);
     loop_assign_active_funcs();
 
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(emscriptenloop, 0, 0);
-#else
     while (true)
     {
         f_time = SDL_GetTicks();
@@ -608,8 +606,8 @@ int main(int argc, char *argv[])
         deltaloop();
     }
 
+
     cleanup();
-#endif
 
     return 0;
 }
@@ -617,6 +615,7 @@ int main(int argc, char *argv[])
 static void cleanup(void)
 {
     /* Order matters! */
+    sceGuTerm(); // oh does it?
     game.savestatsandsettings();
     gameScreen.destroy();
     graphics.grphx.destroy();
@@ -630,8 +629,11 @@ static void cleanup(void)
 
 SDL_NORETURN void VVV_exit(const int exit_code)
 {
-    cleanup();
-    exit(exit_code);
+    // Hopefully nothing too radioactive happens because of not deinitializing things.
+    // cleanup();
+    // And also hopefully nothing nuclear happens when we exit from the main thread.
+    sceKernelExitGame();
+    // ^ This function does not return but is not annotated as such, hence why clangd complains.
 }
 
 static void inline deltaloop(void)

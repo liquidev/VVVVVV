@@ -4098,6 +4098,36 @@ void Game::loadstats(ScreenSettings* screen_settings)
     deserializesettings(dataNode, screen_settings);
 }
 
+static void default_controls(Game &g)
+{
+
+    if (g.controllerButton_flip.size() < 1)
+    {
+        g.controllerButton_flip.clear();
+        g.controllerButton_flip.push_back(SDL_CONTROLLER_BUTTON_A);
+    }
+    if (g.controllerButton_map.size() < 1)
+    {
+        g.controllerButton_map.clear();
+        g.controllerButton_map.push_back(SDL_CONTROLLER_BUTTON_Y);
+    }
+    if (g.controllerButton_esc.size() < 1)
+    {
+        g.controllerButton_esc.clear();
+        g.controllerButton_esc.push_back(SDL_CONTROLLER_BUTTON_B);
+    }
+    if (g.controllerButton_restart.size() < 1)
+    {
+        g.controllerButton_restart.clear();
+        g.controllerButton_restart.push_back(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    }
+    if (g.controllerButton_interact.size() < 1)
+    {
+        g.controllerButton_interact.clear();
+        g.controllerButton_interact.push_back(SDL_CONTROLLER_BUTTON_X);
+    }
+}
+
 void Game::deserializesettings(tinyxml2::XMLElement* dataNode, ScreenSettings* screen_settings)
 {
     // Don't duplicate controller buttons!
@@ -4302,26 +4332,7 @@ void Game::deserializesettings(tinyxml2::XMLElement* dataNode, ScreenSettings* s
 
     }
 
-    if (controllerButton_flip.size() < 1)
-    {
-        controllerButton_flip.push_back(SDL_CONTROLLER_BUTTON_A);
-    }
-    if (controllerButton_map.size() < 1)
-    {
-        controllerButton_map.push_back(SDL_CONTROLLER_BUTTON_Y);
-    }
-    if (controllerButton_esc.size() < 1)
-    {
-        controllerButton_esc.push_back(SDL_CONTROLLER_BUTTON_B);
-    }
-    if (controllerButton_restart.size() < 1)
-    {
-        controllerButton_restart.push_back(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-    }
-    if (controllerButton_interact.size() < 1)
-    {
-        controllerButton_interact.push_back(SDL_CONTROLLER_BUTTON_X);
-    }
+    default_controls(*this);
 }
 
 bool Game::savestats(bool sync /*= true*/)
@@ -4577,6 +4588,7 @@ void Game::loadsettings(ScreenSettings* screen_settings)
     if (!FILESYSTEM_loadTiXml2Document("saves/settings.vvv", doc))
     {
         savesettings(screen_settings);
+        default_controls(*this);
         return;
     }
 
