@@ -52,7 +52,7 @@ void Screen::init(const ScreenSettings& settings)
     );
 
     gpu::init();
-    _screenTexture.init(SCREEN_WIDTH, SCREEN_HEIGHT, "screen texture");
+    _screenBuffer = gpu::createFramebuffer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     badSignalEffect = settings.badSignal;
 }
@@ -132,21 +132,23 @@ void Screen::FlipScreen(const bool flipmode)
     // Implement flip mode.
 
     gpu::start();
-
-    gpu::swap();
     gpu::drawToScreen();
 
-    gpu::clear({0, 0, 0});
+    gpu::clear({32, 32, 32});
 
-    _screenTexture.upload(SCREEN_WIDTH_VRAM, _screenData);
+    _screenBuffer.upload(SCREEN_WIDTH_VRAM, _screenData);
+    // gpu::drawTo(_screenBuffer);
+    // gpu::clear({0, 0, 255});
+    // gpu::drawToScreen();
 
     const auto filter = isFiltered ? gpu::tfLinear : gpu::tfNearest;
-    const auto sampler = _screenTexture.sampler()
+    const auto sampler = _screenBuffer.sampler()
         .withFilter(filter);
     gpu::blit(sampler, screenRect());
 
     gpu::end();
-    gpu::waitVblank();
+
+    gpu::swap();
 }
 
 void Screen::toggleScalingMode(void)

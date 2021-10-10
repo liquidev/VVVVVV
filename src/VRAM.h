@@ -10,7 +10,11 @@ namespace vram {
         void *ptr;
         size_t size;
 
-        operator void *() {
+        // Returns the relative address of this allocation (starting from 0x00000000).
+        // This is required when passing framebuffer pointers into GU functions.
+        void *absolute() const;
+
+        operator void *() const {
             return ptr;
         }
     };

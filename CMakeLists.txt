@@ -52,6 +52,7 @@ set(VVV_SRC
     src/Music.cpp
     src/Otherlevel.cpp
     src/preloader.cpp
+    src/RectPacker.cpp
     src/Render.cpp
     src/RenderFixed.cpp
     src/Screen.cpp

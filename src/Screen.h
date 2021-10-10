@@ -54,7 +54,7 @@ public:
 
 private:
     uint8_t _screenData[SCREEN_WIDTH_VRAM * SCREEN_HEIGHT_VRAM * 4];
-    gpu::Texture _screenTexture;
+    gpu::Framebuffer _screenBuffer;
 };
 
 

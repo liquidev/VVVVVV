@@ -7,14 +7,22 @@
 #include <pspgu.h>
 #include <utility>
 
+#include "Exit.h"
 #include "Screen.h"
 #include "VRAM.h"
 #include "Vlogging.h"
+#include "pspge.h"
+#include "psputils.h"
 
 static gpu::Texture displayFrontTex;
 static gpu::Texture displayBackTex;
-static gpu::Framebuffer drawBuffer;
-static vram::Allocation depth;
+
+static gpu::Framebuffer frontBuffer;
+static gpu::Framebuffer backBuffer;
+static gpu::Framebuffer *drawBuffer = nullptr;
+
+// General-purpose framebuffer storage
+static gpu::Texture gpFramebuffers;
 
 static uint8_t drawList[1024]; // Increase size if needed
 
@@ -44,15 +52,15 @@ static inline unsigned nextPowerOfTwo(unsigned v)
 
 // Sampler
 
-gpu::Sampler::Sampler(const Texture &tex)
-: _tex(tex)
+gpu::Sampler::Sampler(const Framebuffer &fb)
+: _fb(fb)
 , _filter(gpu::tfLinear)
 {
 }
 
-const gpu::Texture &gpu::Sampler::texture() const
+const gpu::Framebuffer &gpu::Sampler::framebuffer() const
 {
-    return _tex;
+    return _fb;
 }
 
 gpu::Sampler gpu::Sampler::withFilter(gpu::TextureFilter filter) const
@@ -64,7 +72,8 @@ gpu::Sampler gpu::Sampler::withFilter(gpu::TextureFilter filter) const
 
 void gpu::Sampler::bind() const
 {
-    sceGuTexImage(0, _tex._vramWidth, _tex._vramHeight, _tex._vramWidth, _tex._vram.ptr);
+    const auto &tex = _fb.texture();
+    sceGuTexImage(0, tex._vramWidth, tex._vramHeight, tex._vramWidth, tex._vram.absolute());
     sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
     int filter;
     switch (_filter) {
@@ -74,9 +83,17 @@ void gpu::Sampler::bind() const
     sceGuTexFilter(filter, filter);
 }
 
+const gpu::Texture &gpu::Sampler::texture() const
+{
+    return _fb.texture();
+}
+
 // Texture
 
-gpu::Texture::Texture() {}
+gpu::Texture::Texture()
+: _packer(0, 0)
+{
+}
 
 void gpu::Texture::init(unsigned w, unsigned h, const char *what)
 {
@@ -85,6 +102,8 @@ void gpu::Texture::init(unsigned w, unsigned h, const char *what)
     _width = w;
     _height = h;
     _vram = vram::allocateTexture32(what, _vramWidth, _height);
+    // The packer only distributes the part we allocate, not the part we tell the GE is ours.
+    _packer = RectPacker(_vramWidth, _height);
 }
 
 unsigned gpu::Texture::width() const
@@ -97,20 +116,14 @@ unsigned gpu::Texture::height() const
     return _height;
 }
 
-void gpu::Texture::upload(unsigned dataWidth, void *data)
+bool gpu::Texture::allocate(Framebuffer &out_fb, unsigned w, unsigned h)
 {
-    sceGuCopyImage(GU_PSM_8888, 0, 0, _width, _height, dataWidth, data, 0, 0, _vramWidth, _vram);
-    sceGuTexSync();
-}
-
-gpu::Sampler gpu::Texture::sampler() const
-{
-    return gpu::Sampler(*this);
-}
-
-gpu::Texture::operator Sampler() const
-{
-    return sampler();
+    SDL_Rect rect{0, 0, int(w), int(h)};
+    if (_packer.pack(rect)) {
+        out_fb.init(*this, rect.x, rect.y, rect.w, rect.h);
+        return true;
+    }
+    return false;
 }
 
 // Framebuffer
@@ -128,30 +141,60 @@ void gpu::Framebuffer::init(const Texture &tex, uint16_t x, uint16_t y, uint16_t
     _height = h;
 }
 
+const gpu::Texture &gpu::Framebuffer::texture() const
+{
+    return *_tex;
+}
+
+uint16_t gpu::Framebuffer::width() const
+{
+    return _width;
+}
+
+uint16_t gpu::Framebuffer::height() const
+{
+    return _height;
+}
+
+void gpu::Framebuffer::upload(unsigned dataWidth, void *data)
+{
+    const auto tex = texture();
+    sceKernelDcacheWritebackAll();
+    sceGuCopyImage(GU_PSM_8888, 0, 0, _width, _height, dataWidth, data, 0, 0, tex._vramWidth, tex._vram.absolute());
+    sceGuTexSync();
+}
+
+gpu::Sampler gpu::Framebuffer::sampler() const
+{
+    return gpu::Sampler(*this);
+}
+
+gpu::Framebuffer::operator Sampler() const
+{
+    return sampler();
+}
+
 // gpu
 
 void gpu::init()
 {
-    displayFrontTex.init(DISPLAY_WIDTH, DISPLAY_HEIGHT, "display front buffer");
     displayBackTex.init(DISPLAY_WIDTH, DISPLAY_HEIGHT, "display back buffer");
-    depth = vram::allocateTexture16("depth buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
+    displayFrontTex.init(DISPLAY_WIDTH, DISPLAY_HEIGHT, "display front buffer");
+    gpFramebuffers.init(512, 240, "general-purpose framebuffers");
 
-    drawBuffer.init(displayBackTex, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    displayFrontTex.allocate(frontBuffer, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    displayBackTex.allocate(backBuffer, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    drawBuffer = &backBuffer;
 
     sceGuInit();
 
-    sceGuStart(GU_DIRECT, drawList);
+    gpu::start();
 
     // Buffers
-    gpu::drawTo(drawBuffer);
-    // sceGuDrawBuffer(GU_PSM_8888, displayBack._vram, DISPLAY_WIDTH_POT);
+    gpu::drawTo(*drawBuffer);
     sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFrontTex._vram, DISPLAY_WIDTH_POT);
-    sceGuDepthBuffer(depth, DISPLAY_WIDTH_POT);
-    // Offsets
-    // sceGuOffset(2048 - (DISPLAY_WIDTH/2), 2048 - (DISPLAY_HEIGHT/2));
-    // sceGuViewport(2048, 2048, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-    // sceGuDepthRange(65535, 0);
-    // sceGuScissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    sceGuDepthBuffer(0, DISPLAY_WIDTH_POT);
+    sceGuDisable(GU_DEPTH_TEST);
     // Flags
     sceGuFrontFace(GU_CW);
     sceGuEnable(GU_SCISSOR_TEST);
@@ -159,22 +202,23 @@ void gpu::init()
     // Textures
     sceGuTexMode(GU_PSM_8888, 1, 0, false);
 
-    sceGuClear(GU_COLOR_BUFFER_BIT | GU_DEPTH_BUFFER_BIT);
+    sceGuClear(GU_COLOR_BUFFER_BIT);
 
-    sceGuFinish();
-    sceGuSync(0, 0);
+    gpu::end();
 
     sceDisplayWaitVblankStart();
     sceGuDisplay(true);
+    sceDisplaySetFrameBuf(displayFrontTex._vram.absolute(), displayBackTex._vramWidth, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
 }
 
-void gpu::swap()
+gpu::Framebuffer gpu::createFramebuffer(unsigned int w, unsigned int h)
 {
-    std::swap(displayFrontTex, displayBackTex);
-    drawBuffer.init(displayBackTex, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-    sceGuDrawBuffer(GU_PSM_8888, displayBackTex._vram, DISPLAY_WIDTH_POT);
-    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFrontTex._vram, DISPLAY_WIDTH_POT);
-    sceDisplaySetFrameBuf(displayFrontTex._vram, DISPLAY_WIDTH_POT, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
+    gpu::Framebuffer fb;
+
+    if (gpFramebuffers.allocate(fb, w, h)) return fb;
+
+    vlog_error("(GPU) could not allocate framebuffer: no space left on dedicated textures");
+    VVV_exit(1);
 }
 
 void gpu::start()
@@ -182,6 +226,14 @@ void gpu::start()
     assert(!inBatch, "attempt to start() while already in a batch");
     inBatch = true;
     sceGuStart(GU_DIRECT, drawList);
+}
+
+void gpu::swap()
+{
+    sceDisplayWaitVblankStart();
+    sceGuSwapBuffers();
+    std::swap(frontBuffer, backBuffer);
+    drawBuffer = &backBuffer;
 }
 
 static void drawingMustHappenInBatch()
@@ -200,10 +252,13 @@ void gpu::clear(Color color)
 
 void gpu::drawTo(gpu::Framebuffer &fb)
 {
+    drawingMustHappenInBatch();
+
     const auto tex = fb._tex;
     const auto origin_x = 2048 + fb._x;
     const auto origin_y = 2048 + fb._y;
-    sceGuDrawBuffer(GU_PSM_8888, tex->_vram.ptr, tex->_vramWidth);
+    sceGuDrawBuffer(GU_PSM_8888, tex->_vram, tex->_vramWidth);
+    // sceGuDrawBuffer(GU_PSM_8888, tex->_vram.ptr, tex->_vramWidth);
     sceGuOffset(origin_x - (tex->_width/2), origin_x - (tex->_height/2));
     sceGuViewport(origin_x, origin_y, fb._width, fb._height);
     sceGuDepthRange(65535, 0);
@@ -212,10 +267,36 @@ void gpu::drawTo(gpu::Framebuffer &fb)
 
 void gpu::drawToScreen()
 {
-    gpu::drawTo(drawBuffer);
+    gpu::drawTo(*drawBuffer);
 }
 
-struct Vertex
+struct ColorVertex
+{
+    constexpr static unsigned Format = GU_COLOR_8888 | GU_VERTEX_16BIT;
+
+    uint32_t color;
+    int16_t x, y, z;
+};
+
+void gpu::fillRectangle(const SDL_Rect &rect, Color color)
+{
+    drawingMustHappenInBatch();
+
+    const auto packed_color = color.pack();
+
+    auto verts = (ColorVertex *)sceGuGetMemory(2 * sizeof(ColorVertex));
+    int16_t
+        x1 = rect.x,
+        y1 = rect.y,
+        x2 = rect.x + rect.w,
+        y2 = rect.y + rect.h;
+    verts[0] = { packed_color, x1, y1, 0 };
+    verts[1] = { packed_color, x2, y2, 0 };
+
+    sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | ColorVertex::Format, 2, nullptr, verts);
+}
+
+struct TextureVertex
 {
     constexpr static unsigned Format = GU_TEXTURE_16BIT | GU_VERTEX_16BIT;
 
@@ -225,34 +306,30 @@ struct Vertex
 
 void gpu::blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv)
 {
+    drawingMustHappenInBatch();
     smp.bind();
 
-    Vertex *verts = (Vertex *)sceGuGetMemory(2 * sizeof(Vertex));
+    const auto fb = smp.framebuffer();
+    auto verts = (TextureVertex *)sceGuGetMemory(2 * sizeof(TextureVertex));
     int16_t
         x1 = position.x,
         y1 = position.y,
         x2 = position.x + position.w,
         y2 = position.y + position.h;
     uint16_t
-        uvx1 = uv.x,
-        uvy1 = uv.y,
-        uvx2 = uv.x + uv.w,
-        uvy2 = uv.y + uv.h;
+        uvx1 = fb._x + uv.x,
+        uvy1 = fb._y + uv.y,
+        uvx2 = fb._x + uv.x + uv.w,
+        uvy2 = fb._y + uv.y + uv.h;
     verts[0] = { uvx1, uvy1,  x1, y1, 0 };
     verts[1] = { uvx2, uvy2,  x2, y2, 0 };
 
-    sceGuDrawArray(
-        GU_SPRITES,
-        GU_TRANSFORM_2D | Vertex::Format,
-        2,
-        nullptr,
-        (void *)verts
-    );
+    sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | TextureVertex::Format, 2, nullptr, verts);
 }
 
 void gpu::blit(const Sampler &smp, const SDL_Rect &position)
 {
-    gpu::blit(smp, position, {0, 0, int(smp.texture().width()), int(smp.texture().height())});
+    gpu::blit(smp, position, {0, 0, int(smp.framebuffer().width()), int(smp.framebuffer().height())});
 }
 
 void gpu::end()
@@ -261,9 +338,4 @@ void gpu::end()
     inBatch = false;
     sceGuFinish();
     sceGuSync(0, 0);
-}
-
-void gpu::waitVblank()
-{
-    sceDisplayWaitVblankStart();
 }

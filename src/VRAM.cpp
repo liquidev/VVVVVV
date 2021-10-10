@@ -49,7 +49,7 @@ namespace vram {
     Allocation screenBuffer;
 
     void init() {
-        allocator = Allocator(sceGeEdramGetAddr());
+        allocator = Allocator(0);
     }
 
     Allocation allocate(const char *what, size_t size)
@@ -66,4 +66,9 @@ namespace vram {
     {
         return allocate(what, width * height * 4);
     }
+}
+
+void *vram::Allocation::absolute() const
+{
+    return (void *)(size_t(ptr) + size_t(sceGeEdramGetAddr()));
 }
