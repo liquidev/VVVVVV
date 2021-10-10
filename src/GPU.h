@@ -30,6 +30,8 @@ class Sampler
     void bind() const;
 
 public:
+    const Texture &texture() const;
+
     Sampler withFilter(TextureFilter filter) const;
 };
 
@@ -95,6 +97,9 @@ void clear(Color color);
 
 // Blits a texture to the screen using the given sampler.
 void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);
+
+// Same as the other `blit` but blits the entire texture and not just a fragment.
+void blit(const Sampler &smp, const SDL_Rect &position);
 
 // Ends the current batch.
 void end();

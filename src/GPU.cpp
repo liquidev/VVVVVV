@@ -1,5 +1,6 @@
 #include "GPU.h"
 
+#include <SDL2/SDL_rect.h>
 #include <cstdint>
 #include <pspdisplay.h>
 #include <pspdebug.h>
@@ -46,6 +47,11 @@ gpu::Sampler::Sampler(const Texture &tex)
 : _tex(tex)
 , _filter(gpu::tfLinear)
 {
+}
+
+const gpu::Texture &gpu::Sampler::texture() const
+{
+    return _tex;
 }
 
 gpu::Sampler gpu::Sampler::withFilter(gpu::TextureFilter filter) const
@@ -205,6 +211,11 @@ void gpu::blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv)
         nullptr,
         (void *)verts
     );
+}
+
+void gpu::blit(const Sampler &smp, const SDL_Rect &position)
+{
+    gpu::blit(smp, position, {0, 0, int(smp.texture().width()), int(smp.texture().height())});
 }
 
 void gpu::end()

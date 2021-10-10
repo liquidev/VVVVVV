@@ -141,7 +141,7 @@ void Screen::FlipScreen(const bool flipmode)
     const auto filter = isFiltered ? gpu::tfLinear : gpu::tfNearest;
     const auto sampler = _screenTexture.sampler()
         .withFilter(filter);
-    gpu::blit(sampler, screenRect(), {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT});
+    gpu::blit(sampler, screenRect());
 
     gpu::end();
     gpu::waitVblank();
