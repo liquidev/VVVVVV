@@ -180,7 +180,7 @@ void gpu::clear(Color color)
 
 struct Vertex
 {
-    constexpr static unsigned FORMAT = GU_TEXTURE_16BIT | GU_VERTEX_16BIT;
+    constexpr static unsigned Format = GU_TEXTURE_16BIT | GU_VERTEX_16BIT;
 
     uint16_t u, v;
     int16_t x, y, z;
@@ -206,7 +206,7 @@ void gpu::blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv)
 
     sceGuDrawArray(
         GU_SPRITES,
-        GU_TRANSFORM_2D | GU_TEXTURE_16BIT | GU_VERTEX_16BIT,
+        GU_TRANSFORM_2D | Vertex::Format,
         2,
         nullptr,
         (void *)verts
