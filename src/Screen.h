@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 #include <cstdint>
 
+#include "GPU.h"
 #include "ScreenSettings.h"
 #include "VRAM.h"
 
@@ -53,14 +54,7 @@ public:
 
 private:
     uint8_t _screenData[SCREEN_WIDTH_VRAM * SCREEN_HEIGHT_VRAM * 4];
-    uint8_t __attribute__((aligned(16))) _drawList[1024*1024]; // Increase if needed
-
-    vram::Allocation displayFront;
-    vram::Allocation displayBack;
-    vram::Allocation depth;
-    vram::Allocation screenTexture;
-
-    void *drawBuffer;
+    gpu::Texture _screenTexture;
 };
 
 

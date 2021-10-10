@@ -40,6 +40,7 @@ set(VVV_SRC
     src/FileSystemUtils.cpp
     src/Finalclass.cpp
     src/Game.cpp
+    src/GPU.cpp
     src/Graphics.cpp
     src/GraphicsResources.cpp
     src/GraphicsUtil.cpp
