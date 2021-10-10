@@ -35,10 +35,16 @@ public:
     Sampler withFilter(TextureFilter filter) const;
 };
 
+class Framebuffer;
+
 // An RGBA texture.
+// Textures are only as a means of allocating Framebuffers, which store an area on the texture.
 class Texture
 {
     friend class Sampler;
+    friend void init();
+    friend void swap();
+    friend void drawTo(gpu::Framebuffer &fb);
 
     vram::Allocation _vram;
     unsigned _vramWidth, _vramHeight;
@@ -46,7 +52,10 @@ class Texture
 
 public:
     Texture();
-    Texture(unsigned w, unsigned h, const char *what = "gpu::Texture");
+    void init(unsigned w, unsigned h, const char *what = "gpu::Texture");
+
+    // Texture(const Texture &) = delete;
+    // Texture &operator=(const Texture &) = delete;
 
     unsigned width() const;
     unsigned height() const;
@@ -56,6 +65,19 @@ public:
 
     Sampler sampler() const;
     operator Sampler() const;
+};
+
+// A framebuffer, which is a slice of an existing RGBA texture.
+class Framebuffer
+{
+    friend void drawTo(gpu::Framebuffer &fb);
+
+    const Texture *_tex;
+    uint16_t _x, _y, _width, _height;
+
+public:
+    Framebuffer();
+    void init(const Texture &tex, uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 };
 
 struct Color
@@ -94,6 +116,12 @@ void start();
 
 // Clears the screen with a color. Must be used in a batch.
 void clear(Color color);
+
+// Makes it so that drawing should be done on the main screen.
+void drawToScreen();
+
+// Makes it so that all drawing is done to the given framebuffer.
+void drawTo(gpu::Framebuffer &fb);
 
 // Blits a texture to the screen using the given sampler.
 void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);

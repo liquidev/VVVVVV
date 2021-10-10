@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Alloc.h"
+#include "GPU.h"
 #include "GraphicsResources.h"
 #include "GraphicsUtil.h"
 #include "Maths.h"
@@ -261,6 +262,7 @@ public:
     bool setflipmode;
     bool notextoutline;
     //buffer objects. //TODO refactor buffer objects
+    // gpu::Texture backBuffer;
     SurfaceRgba<320, 240> backBuffer;
     Screen* screenbuffer;
     SurfaceRgba<320, 240> menubuffer;

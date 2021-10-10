@@ -52,7 +52,7 @@ void Screen::init(const ScreenSettings& settings)
     );
 
     gpu::init();
-    _screenTexture = gpu::Texture(SCREEN_WIDTH, SCREEN_HEIGHT);
+    _screenTexture.init(SCREEN_WIDTH, SCREEN_HEIGHT, "screen texture");
 
     badSignalEffect = settings.badSignal;
 }
@@ -132,7 +132,9 @@ void Screen::FlipScreen(const bool flipmode)
     // Implement flip mode.
 
     gpu::start();
+
     gpu::swap();
+    gpu::drawToScreen();
 
     gpu::clear({0, 0, 0});
 

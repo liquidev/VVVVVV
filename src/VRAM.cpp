@@ -9,21 +9,28 @@
 struct Allocator {
     size_t origin;
     size_t position;
+    size_t count;
 
     Allocator(void *_initial_position)
     : origin((size_t)_initial_position)
     , position((size_t)_initial_position)
+    , count(0)
     {
     }
 
     inline vram::Allocation next(const char *what, size_t size)
     {
         size_t loc = position;
+        size_t vram_size = sceGeEdramGetSize();
         position += size;
-        if (position - origin > sceGeEdramGetSize()) {
+        count += size;
+        if (size > vram_size) {
             vlog_error("Out of VRAM (allocation '%s')", what);
         } else {
             vlog_debug("VRAM allocation '%s' at %p", what, (void *)loc);
+            vlog_debug("VRAM used: %u / %u (%.1f%%)",
+                (unsigned)count, (unsigned)vram_size,
+                float(count) / float(vram_size) * 100.0f);
         }
         // Align position to 16 bytes.
         position = (position + 15) & ~15;

@@ -677,7 +677,9 @@ static void inline deltaloop(void)
 
         if (implfunc->type == Func_delta && implfunc->func != NULL)
         {
+            gpu::start();
             implfunc->func();
+            gpu::end();
 
             gameScreen.FlipScreen(graphics.flipmode);
         }

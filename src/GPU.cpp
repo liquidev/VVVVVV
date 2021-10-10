@@ -11,8 +11,9 @@
 #include "VRAM.h"
 #include "Vlogging.h"
 
-static vram::Allocation displayFront;
-static vram::Allocation displayBack;
+static gpu::Texture displayFrontTex;
+static gpu::Texture displayBackTex;
+static gpu::Framebuffer drawBuffer;
 static vram::Allocation depth;
 
 static uint8_t drawList[1024]; // Increase size if needed
@@ -77,13 +78,13 @@ void gpu::Sampler::bind() const
 
 gpu::Texture::Texture() {}
 
-gpu::Texture::Texture(unsigned w, unsigned h, const char *what)
+void gpu::Texture::init(unsigned w, unsigned h, const char *what)
 {
     _vramWidth = nextPowerOfTwo(w);
     _vramHeight = nextPowerOfTwo(h);
     _width = w;
     _height = h;
-    _vram = vram::allocateTexture32(what, _vramWidth, _vramHeight);
+    _vram = vram::allocateTexture32(what, _vramWidth, _height);
 }
 
 unsigned gpu::Texture::width() const
@@ -112,30 +113,48 @@ gpu::Texture::operator Sampler() const
     return sampler();
 }
 
+// Framebuffer
+
+gpu::Framebuffer::Framebuffer()
+{
+}
+
+void gpu::Framebuffer::init(const Texture &tex, uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+{
+    _tex = &tex;
+    _x = x;
+    _y = y;
+    _width = w;
+    _height = h;
+}
+
 // gpu
 
 void gpu::init()
 {
-    displayFront = vram::allocateTexture32("display front buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
-    displayBack = vram::allocateTexture32("display back buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
+    displayFrontTex.init(DISPLAY_WIDTH, DISPLAY_HEIGHT, "display front buffer");
+    displayBackTex.init(DISPLAY_WIDTH, DISPLAY_HEIGHT, "display back buffer");
     depth = vram::allocateTexture16("depth buffer", DISPLAY_WIDTH_POT, DISPLAY_HEIGHT);
+
+    drawBuffer.init(displayBackTex, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
     sceGuInit();
 
     sceGuStart(GU_DIRECT, drawList);
 
     // Buffers
-    sceGuDrawBuffer(GU_PSM_8888, displayBack, DISPLAY_WIDTH_POT);
-    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFront, DISPLAY_WIDTH_POT);
+    gpu::drawTo(drawBuffer);
+    // sceGuDrawBuffer(GU_PSM_8888, displayBack._vram, DISPLAY_WIDTH_POT);
+    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFrontTex._vram, DISPLAY_WIDTH_POT);
     sceGuDepthBuffer(depth, DISPLAY_WIDTH_POT);
     // Offsets
-    sceGuOffset(2048 - (DISPLAY_WIDTH/2), 2048 - (DISPLAY_HEIGHT/2));
-    sceGuViewport(2048, 2048, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-    sceGuDepthRange(65535, 0);
-    sceGuScissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    // sceGuOffset(2048 - (DISPLAY_WIDTH/2), 2048 - (DISPLAY_HEIGHT/2));
+    // sceGuViewport(2048, 2048, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    // sceGuDepthRange(65535, 0);
+    // sceGuScissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
     // Flags
-    sceGuEnable(GU_SCISSOR_TEST);
     sceGuFrontFace(GU_CW);
+    sceGuEnable(GU_SCISSOR_TEST);
     sceGuEnable(GU_TEXTURE_2D);
     // Textures
     sceGuTexMode(GU_PSM_8888, 1, 0, false);
@@ -151,10 +170,11 @@ void gpu::init()
 
 void gpu::swap()
 {
-    std::swap(displayFront, displayBack);
-    sceGuDrawBuffer(GU_PSM_8888, displayBack, DISPLAY_WIDTH_POT);
-    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFront, DISPLAY_WIDTH_POT);
-    sceDisplaySetFrameBuf(displayFront, DISPLAY_WIDTH_POT, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
+    std::swap(displayFrontTex, displayBackTex);
+    drawBuffer.init(displayBackTex, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    sceGuDrawBuffer(GU_PSM_8888, displayBackTex._vram, DISPLAY_WIDTH_POT);
+    sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFrontTex._vram, DISPLAY_WIDTH_POT);
+    sceDisplaySetFrameBuf(displayFrontTex._vram, DISPLAY_WIDTH_POT, GU_PSM_8888, PSP_DISPLAY_SETBUF_IMMEDIATE);
 }
 
 void gpu::start()
@@ -176,6 +196,23 @@ void gpu::clear(Color color)
     uint32_t col = color.pack();
     sceGuClearColor(col);
     sceGuClear(GU_COLOR_BUFFER_BIT);
+}
+
+void gpu::drawTo(gpu::Framebuffer &fb)
+{
+    const auto tex = fb._tex;
+    const auto origin_x = 2048 + fb._x;
+    const auto origin_y = 2048 + fb._y;
+    sceGuDrawBuffer(GU_PSM_8888, tex->_vram.ptr, tex->_vramWidth);
+    sceGuOffset(origin_x - (tex->_width/2), origin_x - (tex->_height/2));
+    sceGuViewport(origin_x, origin_y, fb._width, fb._height);
+    sceGuDepthRange(65535, 0);
+    sceGuScissor(0, 0, fb._width, fb._height);
+}
+
+void gpu::drawToScreen()
+{
+    gpu::drawTo(drawBuffer);
 }
 
 struct Vertex
