@@ -134,7 +134,7 @@ void Screen::FlipScreen(const bool flipmode)
     gpu::start();
     gpu::drawToScreen();
 
-    gpu::clear({32, 32, 32});
+    gpu::clear({0, 0, 0});
 
     _screenBuffer.upload(SCREEN_WIDTH_VRAM, _screenData);
     // gpu::drawTo(_screenBuffer);
