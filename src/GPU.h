@@ -32,6 +32,7 @@ struct Color
     {
     }
 
+    // Unpacks a color from a little-endian packed uint32.
     inline static Color unpack(uint32_t packed)
     {
         return {
@@ -42,6 +43,7 @@ struct Color
         };
     }
 
+    // Packs a color to a little-endian uint32.
     inline uint32_t pack()
     {
         return
