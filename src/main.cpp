@@ -33,6 +33,7 @@
 #include <pspkernel.h>
 #include <pspctrl.h>
 #include <pspdebug.h>
+#include <psppower.h>
 #include "VRAM.h"
 
 PSP_MODULE_INFO("VVVVVV", 0, 1, 0);
@@ -410,6 +411,9 @@ int main(int argc, char *argv[])
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
+    // I am speed.
+    scePowerSetClockFrequency(333, 333, 166);
+
     if(!FILESYSTEM_init(argv[0], baseDir, assetsPath))
     {
         vlog_error("Unable to initialize filesystem!");
@@ -585,6 +589,11 @@ int main(int argc, char *argv[])
 
     gamestate_funcs = get_gamestate_funcs(game.gamestate, &num_gamestate_funcs);
     loop_assign_active_funcs();
+
+#ifdef PSP_HANDICAP
+    // Slow down there chief.
+    scePowerSetClockFrequency(166, 166, 83);
+#endif
 
     while (true)
     {

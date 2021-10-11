@@ -16,6 +16,10 @@ option(OFFICIAL_BUILD "Compile an official build of the game" OFF)
 
 option(MAKEANDPLAY "Compile a version of the game without the main campaign (provided for convenience; consider modifying MakeAndPlay.h instead" OFF)
 
+# This option is meant for development purposes to measure performance more effectively.
+# Once the game runs at a reasonable speed this will be on by default.
+option(PSP_HANDICAP "Handicap the CPU and BUS clock speeds after loading assets" OFF)
+
 if(${CMAKE_VERSION} VERSION_LESS "3.1.3")
     message(WARNING "Your CMake version is too old; set -std=c90 -std=c++11 yourself!")
 else()
@@ -109,6 +113,10 @@ endif()
 
 if(MAKEANDPLAY)
     target_compile_definitions(VVVVVV PRIVATE -DMAKEANDPLAY)
+endif()
+
+if(PSP_HANDICAP)
+    target_compile_definitions(VVVVVV PRIVATE -DPSP_HANDICAP)
 endif()
 
 set(XML2_SRC
@@ -255,6 +263,7 @@ target_link_libraries(VVVVVV
     # https://github.com/DaveeFTW/Infinity/blob/ad6e5e1f752372c46e7bc5e20f3f2e7e736b35f4/app/CMakeLists.txt#L98
     pspaudio
     pspvram
+    psppower
     GL
     psphprm
     c
