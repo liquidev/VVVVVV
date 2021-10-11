@@ -156,6 +156,25 @@ uint16_t gpu::Framebuffer::height() const
     return _height;
 }
 
+static void drawingMustHappenInBatch()
+{
+    assert(inBatch, "all drawing must happen in a batch");
+}
+
+void gpu::Framebuffer::bind()
+{
+    drawingMustHappenInBatch();
+
+    const auto tex = _tex;
+    const auto origin_x = 2048 + _x;
+    const auto origin_y = 2048 + _y;
+    sceGuDrawBuffer(GU_PSM_8888, tex->_vram, tex->_vramWidth);
+    sceGuOffset(origin_x - (tex->_width/2), origin_x - (tex->_height/2));
+    sceGuViewport(origin_x, origin_y, _width, _height);
+    sceGuDepthRange(65535, 0);
+    sceGuScissor(0, 0, _width, _height);
+}
+
 void gpu::Framebuffer::upload(unsigned dataWidth, void *data)
 {
     const auto tex = texture();
@@ -163,6 +182,7 @@ void gpu::Framebuffer::upload(unsigned dataWidth, void *data)
     sceGuCopyImage(GU_PSM_8888, 0, 0, _width, _height, dataWidth, data, 0, 0, tex._vramWidth, tex._vram.absolute());
     sceGuTexSync();
 }
+
 
 gpu::Sampler gpu::Framebuffer::sampler() const
 {
@@ -191,7 +211,7 @@ void gpu::init()
     gpu::start();
 
     // Buffers
-    gpu::drawTo(*drawBuffer);
+    drawBuffer->bind();
     sceGuDispBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, displayFrontTex._vram, DISPLAY_WIDTH_POT);
     sceGuDepthBuffer(0, DISPLAY_WIDTH_POT);
     sceGuDisable(GU_DEPTH_TEST);
@@ -230,15 +250,13 @@ void gpu::start()
 
 void gpu::swap()
 {
+    // Make sure the draw buffer is what we set it to at the beginning of the frame.
+    // We don't want to accidentally make a user's framebuffer be the display buffer.
+    drawBuffer->bind();
     sceDisplayWaitVblankStart();
     sceGuSwapBuffers();
     std::swap(frontBuffer, backBuffer);
     drawBuffer = &backBuffer;
-}
-
-static void drawingMustHappenInBatch()
-{
-    assert(inBatch, "all drawing must happen in a batch");
 }
 
 void gpu::clear(Color color)
@@ -252,22 +270,7 @@ void gpu::clear(Color color)
 
 void gpu::drawTo(gpu::Framebuffer &fb)
 {
-    drawingMustHappenInBatch();
-
-    const auto tex = fb._tex;
-    const auto origin_x = 2048 + fb._x;
-    const auto origin_y = 2048 + fb._y;
-    sceGuDrawBuffer(GU_PSM_8888, tex->_vram, tex->_vramWidth);
-    // sceGuDrawBuffer(GU_PSM_8888, tex->_vram.ptr, tex->_vramWidth);
-    sceGuOffset(origin_x - (tex->_width/2), origin_x - (tex->_height/2));
-    sceGuViewport(origin_x, origin_y, fb._width, fb._height);
-    sceGuDepthRange(65535, 0);
-    sceGuScissor(0, 0, fb._width, fb._height);
-}
-
-void gpu::drawToScreen()
-{
-    gpu::drawTo(*drawBuffer);
+    fb.bind();
 }
 
 struct ColorVertex
@@ -293,6 +296,7 @@ void gpu::fillRectangle(const SDL_Rect &rect, Color color)
     verts[0] = { packed_color, x1, y1, 0 };
     verts[1] = { packed_color, x2, y2, 0 };
 
+    sceGuDisable(GU_TEXTURE_2D);
     sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | ColorVertex::Format, 2, nullptr, verts);
 }
 
@@ -324,12 +328,18 @@ void gpu::blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv)
     verts[0] = { uvx1, uvy1,  x1, y1, 0 };
     verts[1] = { uvx2, uvy2,  x2, y2, 0 };
 
+    sceGuEnable(GU_TEXTURE_2D);
     sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | TextureVertex::Format, 2, nullptr, verts);
 }
 
 void gpu::blit(const Sampler &smp, const SDL_Rect &position)
 {
     gpu::blit(smp, position, {0, 0, int(smp.framebuffer().width()), int(smp.framebuffer().height())});
+}
+
+gpu::Framebuffer &gpu::display()
+{
+    return *drawBuffer;
 }
 
 void gpu::end()

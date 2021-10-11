@@ -15,6 +15,44 @@
 
 namespace gpu {
 
+struct Color
+{
+    uint8_t r, g, b, a;
+
+    inline Color(int r_, int g_, int b_, int a_)
+    : r(r_)
+    , g(g_)
+    , b(b_)
+    , a(a_)
+    {
+    }
+
+    inline Color(int r_, int g_, int b_)
+    : Color(r_, g_, b_, 255)
+    {
+    }
+
+    inline static Color unpack(uint32_t packed)
+    {
+        return {
+            uint8_t(packed & 0xFF),         // r
+            uint8_t((packed >> 8) & 0xFF),  // g
+            uint8_t((packed >> 16) & 0xFF), // b
+            uint8_t((packed >> 24) & 0xFF), // a
+        };
+    }
+
+    inline uint32_t pack()
+    {
+        return
+            uint32_t(r) |
+            (uint32_t(g) << 8) |
+            (uint32_t(b) << 16) |
+            (uint32_t(a) << 24)
+            ;
+    }
+};
+
 enum TextureFilter {
     tfLinear,
     tfNearest,
@@ -92,36 +130,13 @@ public:
     uint16_t width() const;
     uint16_t height() const;
 
+    void bind();
+
     // Uploads texture data to the GPU. Must be called while in a batch.
     void upload(unsigned dataWidth, void *data);
 
     Sampler sampler() const;
     operator Sampler() const;
-};
-
-struct Color
-{
-    uint8_t r, g, b, a;
-
-    inline static Color unpack(uint32_t packed)
-    {
-        return {
-            uint8_t(packed & 0xFF),         // r
-            uint8_t((packed >> 8) & 0xFF),  // g
-            uint8_t((packed >> 16) & 0xFF), // b
-            uint8_t((packed >> 24) & 0xFF), // a
-        };
-    }
-
-    inline uint32_t pack()
-    {
-        return
-            uint32_t(r) |
-            (uint32_t(g) << 8) |
-            (uint32_t(b) << 16) |
-            (uint32_t(a) << 24)
-            ;
-    }
 };
 
 // Initializes GPU state.
@@ -139,9 +154,6 @@ void swap();
 // Clears the screen with a color. Must be used in a batch.
 void clear(Color color);
 
-// Makes it so that drawing should be done on the main screen.
-void drawToScreen();
-
 // Makes it so that all drawing is done to the given framebuffer.
 void drawTo(gpu::Framebuffer &fb);
 
@@ -153,6 +165,8 @@ void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);
 
 // Same as the other `blit` but blits the entire texture and not just a fragment.
 void blit(const Sampler &smp, const SDL_Rect &position);
+
+Framebuffer &display();
 
 // Ends the current batch.
 void end();
