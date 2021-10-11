@@ -4,7 +4,7 @@ This is a port of VVVVVV to PlayStation Portable. Still highly work in progress!
 
 ## But hey, it runs!
 
-I wouldn't say it runs particularly well, but if you want to enjoy VVVVVV on your PSP in _~glorious~_ 15 frames per second (or lower), here's how to build the thing.
+I wouldn't say it runs particularly well, but if you want to enjoy VVVVVV on your PSP in _\~glorious\~_ 15 frames per second (or lower), here's how to build the thing.
 
 ```sh
 $ ./build.sh -j12  # adjust job count accordingly to suit your hardware
