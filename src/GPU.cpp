@@ -148,6 +148,8 @@ gpu::Framebuffer::Framebuffer()
 {
 }
 
+gpu::Framebuffer *gpu::Framebuffer::__currentlyBound = nullptr;
+
 void gpu::Framebuffer::init(const Texture &tex, uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
     _tex = &tex;
@@ -181,14 +183,19 @@ void gpu::Framebuffer::bind()
 {
     drawingMustHappenInBatch();
 
-    const auto tex = _tex;
-    const auto origin_x = 2048 + _x;
-    const auto origin_y = 2048 + _y;
-    sceGuDrawBuffer(GU_PSM_8888, tex->_vram, tex->_vramWidth);
-    sceGuOffset(origin_x - (tex->_width/2), origin_x - (tex->_height/2));
-    sceGuViewport(origin_x, origin_y, _width, _height);
-    sceGuDepthRange(65535, 0);
-    sceGuScissor(0, 0, _width, _height);
+    // Avoid needlessly sending commands to the GE.
+    if (__currentlyBound != this) {
+        const auto tex = _tex;
+        const auto origin_x = 2048 + _x;
+        const auto origin_y = 2048 + _y;
+        sceGuDrawBuffer(GU_PSM_8888, tex->_vram, tex->_vramWidth);
+        sceGuOffset(origin_x - (tex->_width/2), origin_x - (tex->_height/2));
+        sceGuViewport(origin_x, origin_y, _width, _height);
+        sceGuDepthRange(65535, 0);
+        sceGuScissor(0, 0, _width, _height);
+
+        __currentlyBound = this;
+    }
 }
 
 void gpu::Framebuffer::clear(Color color)
@@ -258,7 +265,6 @@ void gpu::Framebuffer::upload(unsigned dataWidth, void *data)
     sceGuCopyImage(GU_PSM_8888, 0, 0, _width, _height, dataWidth, data, 0, 0, tex._vramWidth, tex._vram.absolute());
     sceGuTexSync();
 }
-
 
 gpu::Sampler gpu::Framebuffer::sampler() const
 {

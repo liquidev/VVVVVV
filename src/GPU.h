@@ -119,6 +119,8 @@ class Framebuffer
     friend void init();
     friend void swap();
 
+    static Framebuffer *__currentlyBound;
+
     const Texture *_tex;
     uint16_t _x, _y, _width, _height;
 
@@ -139,7 +141,7 @@ public:
     // Draws a filled rectangle.
     void fillRectangle(const SDL_Rect &rect, Color color);
 
-    // Blits a texture to the screen using the given sampler.
+    // Blits a texture to the framebuffer using the given sampler.
     void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);
 
     // Same as the other `blit` but blits the entire texture and not just a fragment.
@@ -164,6 +166,9 @@ void start();
 // Swaps front and back buffers. Must be called at the end of a frame.
 void swap();
 
+// Returns the display framebuffer.
+// Note that this reference should not be cached, as this changes every frame due to
+// double buffering!
 Framebuffer &display();
 
 // Ends the current batch.
