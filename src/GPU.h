@@ -116,11 +116,14 @@ public:
 // A framebuffer, which is a slice of an existing RGBA texture.
 class Framebuffer
 {
-    friend void drawTo(gpu::Framebuffer &fb);
-    friend void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);
+    friend void init();
+    friend void swap();
 
     const Texture *_tex;
     uint16_t _x, _y, _width, _height;
+
+    // Binds the framebuffer for rendering.
+    void bind();
 
 public:
     Framebuffer();
@@ -130,7 +133,17 @@ public:
     uint16_t width() const;
     uint16_t height() const;
 
-    void bind();
+    // Clears the framebuffer with a color. Must be used in a batch.
+    void clear(Color color);
+
+    // Draws a filled rectangle.
+    void fillRectangle(const SDL_Rect &rect, Color color);
+
+    // Blits a texture to the screen using the given sampler.
+    void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);
+
+    // Same as the other `blit` but blits the entire texture and not just a fragment.
+    void blit(const Sampler &smp, const SDL_Rect &position);
 
     // Uploads texture data to the GPU. Must be called while in a batch.
     void upload(unsigned dataWidth, void *data);
@@ -150,21 +163,6 @@ void start();
 
 // Swaps front and back buffers. Must be called at the end of a frame.
 void swap();
-
-// Clears the screen with a color. Must be used in a batch.
-void clear(Color color);
-
-// Makes it so that all drawing is done to the given framebuffer.
-void drawTo(gpu::Framebuffer &fb);
-
-// Draws a filled rectangle.
-void fillRectangle(const SDL_Rect &rect, Color color);
-
-// Blits a texture to the screen using the given sampler.
-void blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv);
-
-// Same as the other `blit` but blits the entire texture and not just a fragment.
-void blit(const Sampler &smp, const SDL_Rect &position);
 
 Framebuffer &display();
 

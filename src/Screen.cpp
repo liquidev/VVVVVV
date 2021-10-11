@@ -133,20 +133,17 @@ void Screen::FlipScreen(const bool flipmode)
 
     gpu::start();
 
-    gpu::drawTo(gpu::display());
+    auto display = gpu::display();
 
-    gpu::clear({0, 0, 0});
+    display.clear({0, 0, 0});
 
     _screenBuffer.upload(SCREEN_WIDTH_VRAM, _screenData);
-    gpu::drawTo(_screenBuffer);
-    gpu::fillRectangle({0, 0, 16, 16}, {255, 255, 255, 255});
-
-    gpu::drawTo(gpu::display());
+    _screenBuffer.fillRectangle({0, 0, 16, 16}, {255, 255, 255, 255});
 
     const auto filter = isFiltered ? gpu::tfLinear : gpu::tfNearest;
     const auto sampler = _screenBuffer.sampler()
         .withFilter(filter);
-    gpu::blit(sampler, screenRect());
+    display.blit(sampler, screenRect());
 
     gpu::end();
 

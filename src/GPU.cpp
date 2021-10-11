@@ -50,6 +50,22 @@ static inline unsigned nextPowerOfTwo(unsigned v)
     return v;
 }
 
+struct ColorVertex
+{
+    constexpr static unsigned Format = GU_COLOR_8888 | GU_VERTEX_16BIT;
+
+    uint32_t color;
+    int16_t x, y, z;
+};
+
+struct TextureVertex
+{
+    constexpr static unsigned Format = GU_TEXTURE_16BIT | GU_VERTEX_16BIT;
+
+    uint16_t u, v;
+    int16_t x, y, z;
+};
+
 // Sampler
 
 gpu::Sampler::Sampler(const Framebuffer &fb)
@@ -175,8 +191,68 @@ void gpu::Framebuffer::bind()
     sceGuScissor(0, 0, _width, _height);
 }
 
+void gpu::Framebuffer::clear(Color color)
+{
+    bind();
+
+    uint32_t col = color.pack();
+    sceGuClearColor(col);
+    sceGuClear(GU_COLOR_BUFFER_BIT);
+}
+
+void gpu::Framebuffer::fillRectangle(const SDL_Rect &rect, Color color)
+{
+    bind();
+
+    const auto packed_color = color.pack();
+
+    auto verts = (ColorVertex *)sceGuGetMemory(2 * sizeof(ColorVertex));
+    int16_t
+        x1 = rect.x,
+        y1 = rect.y,
+        x2 = rect.x + rect.w,
+        y2 = rect.y + rect.h;
+    verts[0] = { packed_color, x1, y1, 0 };
+    verts[1] = { packed_color, x2, y2, 0 };
+
+    sceGuDisable(GU_TEXTURE_2D);
+    sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | ColorVertex::Format, 2, nullptr, verts);
+}
+
+void gpu::Framebuffer::blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv)
+{
+    bind();
+    smp.bind();
+
+    const auto fb = smp.framebuffer();
+    auto verts = (TextureVertex *)sceGuGetMemory(2 * sizeof(TextureVertex));
+    int16_t
+        x1 = position.x,
+        y1 = position.y,
+        x2 = position.x + position.w,
+        y2 = position.y + position.h;
+    uint16_t
+        uvx1 = fb._x + uv.x,
+        uvy1 = fb._y + uv.y,
+        uvx2 = fb._x + uv.x + uv.w,
+        uvy2 = fb._y + uv.y + uv.h;
+    verts[0] = { uvx1, uvy1,  x1, y1, 0 };
+    verts[1] = { uvx2, uvy2,  x2, y2, 0 };
+
+    sceGuEnable(GU_TEXTURE_2D);
+    sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | TextureVertex::Format, 2, nullptr, verts);
+}
+
+void gpu::Framebuffer::blit(const Sampler &smp, const SDL_Rect &position)
+{
+    blit(smp, position, {0, 0, int(smp.framebuffer().width()), int(smp.framebuffer().height())});
+}
+
+
 void gpu::Framebuffer::upload(unsigned dataWidth, void *data)
 {
+    // Don't bind() here as we aren't performing any draw calls.
+
     const auto tex = texture();
     sceKernelDcacheWritebackAll();
     sceGuCopyImage(GU_PSM_8888, 0, 0, _width, _height, dataWidth, data, 0, 0, tex._vramWidth, tex._vram.absolute());
@@ -257,84 +333,6 @@ void gpu::swap()
     sceGuSwapBuffers();
     std::swap(frontBuffer, backBuffer);
     drawBuffer = &backBuffer;
-}
-
-void gpu::clear(Color color)
-{
-    drawingMustHappenInBatch();
-
-    uint32_t col = color.pack();
-    sceGuClearColor(col);
-    sceGuClear(GU_COLOR_BUFFER_BIT);
-}
-
-void gpu::drawTo(gpu::Framebuffer &fb)
-{
-    fb.bind();
-}
-
-struct ColorVertex
-{
-    constexpr static unsigned Format = GU_COLOR_8888 | GU_VERTEX_16BIT;
-
-    uint32_t color;
-    int16_t x, y, z;
-};
-
-void gpu::fillRectangle(const SDL_Rect &rect, Color color)
-{
-    drawingMustHappenInBatch();
-
-    const auto packed_color = color.pack();
-
-    auto verts = (ColorVertex *)sceGuGetMemory(2 * sizeof(ColorVertex));
-    int16_t
-        x1 = rect.x,
-        y1 = rect.y,
-        x2 = rect.x + rect.w,
-        y2 = rect.y + rect.h;
-    verts[0] = { packed_color, x1, y1, 0 };
-    verts[1] = { packed_color, x2, y2, 0 };
-
-    sceGuDisable(GU_TEXTURE_2D);
-    sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | ColorVertex::Format, 2, nullptr, verts);
-}
-
-struct TextureVertex
-{
-    constexpr static unsigned Format = GU_TEXTURE_16BIT | GU_VERTEX_16BIT;
-
-    uint16_t u, v;
-    int16_t x, y, z;
-};
-
-void gpu::blit(const Sampler &smp, const SDL_Rect &position, const SDL_Rect &uv)
-{
-    drawingMustHappenInBatch();
-    smp.bind();
-
-    const auto fb = smp.framebuffer();
-    auto verts = (TextureVertex *)sceGuGetMemory(2 * sizeof(TextureVertex));
-    int16_t
-        x1 = position.x,
-        y1 = position.y,
-        x2 = position.x + position.w,
-        y2 = position.y + position.h;
-    uint16_t
-        uvx1 = fb._x + uv.x,
-        uvy1 = fb._y + uv.y,
-        uvx2 = fb._x + uv.x + uv.w,
-        uvy2 = fb._y + uv.y + uv.h;
-    verts[0] = { uvx1, uvy1,  x1, y1, 0 };
-    verts[1] = { uvx2, uvy2,  x2, y2, 0 };
-
-    sceGuEnable(GU_TEXTURE_2D);
-    sceGuDrawArray(GU_SPRITES, GU_TRANSFORM_2D | TextureVertex::Format, 2, nullptr, verts);
-}
-
-void gpu::blit(const Sampler &smp, const SDL_Rect &position)
-{
-    gpu::blit(smp, position, {0, 0, int(smp.framebuffer().width()), int(smp.framebuffer().height())});
 }
 
 gpu::Framebuffer &gpu::display()
